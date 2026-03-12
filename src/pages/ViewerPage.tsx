@@ -23,14 +23,19 @@ export default function ViewerPage() {
   const projectId = paramId || DEFAULT_PROJECT_ID;
 
   const [project, setProject] = useState<Project | null>(null);
+  const [projectLoaded, setProjectLoaded] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState<TabId>('schedule');
 
   useEffect(() => {
+    setProjectLoaded(false);
     const unsubs = [
-      subscribeProject(projectId, setProject),
+      subscribeProject(projectId, (p) => {
+        setProject(p);
+        setProjectLoaded(true);
+      }),
       subscribeTasks(projectId, setTasks),
       subscribeDailyLogs(projectId, setLogs),
       subscribeComments(projectId, setComments),
@@ -52,12 +57,38 @@ export default function ViewerPage() {
     ).length;
   }, [tasks]);
 
-  if (!project) {
+  // Still loading from Firestore
+  if (!projectLoaded) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-text-dim text-sm">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Project not found in Firestore
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-dark-card border border-dark-border rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <ClipboardList className="w-8 h-8 text-gold" />
+          </div>
+          <h1 className="text-2xl font-bold text-text-bright mb-2">INTEROHRIGIN</h1>
+          <p className="text-text-mid mb-1">프로젝트 트래커</p>
+          <p className="text-sm text-text-dim mb-8">
+            아직 등록된 프로젝트가 없습니다.<br />
+            관리자가 초기 데이터를 생성하면 이 화면에 공정표가 표시됩니다.
+          </p>
+          <a
+            href="/admin/login"
+            className="inline-flex items-center gap-2 bg-gold text-dark-bg px-6 py-3 rounded-xl font-bold hover:bg-gold-dim transition-colors"
+          >
+            관리자로 시작하기
+          </a>
         </div>
       </div>
     );

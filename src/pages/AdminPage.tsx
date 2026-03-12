@@ -38,6 +38,7 @@ export default function AdminPage() {
   const projectId = DEFAULT_PROJECT_ID;
 
   const [project, setProject] = useState<Project | null>(null);
+  const [projectLoaded, setProjectLoaded] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -71,8 +72,12 @@ export default function AdminPage() {
       navigate('/admin/login');
       return;
     }
+    setProjectLoaded(false);
     const unsubs = [
-      subscribeProject(projectId, setProject),
+      subscribeProject(projectId, (p) => {
+        setProject(p);
+        setProjectLoaded(true);
+      }),
       subscribeTasks(projectId, setTasks),
       subscribeDailyLogs(projectId, setLogs),
       subscribeComments(projectId, setComments),
@@ -150,18 +155,37 @@ export default function AdminPage() {
     5: '완성 + 배포',
   };
 
-  if (!project) {
+  // Still loading from Firestore
+  if (!projectLoaded) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-text-dim text-sm">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Project not found — show seed button
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-dark-card border border-dark-border rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <Database className="w-8 h-8 text-gold" />
+          </div>
+          <h1 className="text-xl font-bold text-text-bright mb-2">프로젝트 초기 설정</h1>
+          <p className="text-sm text-text-dim mb-8 leading-relaxed">
+            Firestore에 아직 프로젝트 데이터가 없습니다.<br />
+            아래 버튼을 눌러 15개 작업이 포함된 초기 데이터를 생성하세요.
+          </p>
           <button
             onClick={handleSeed}
             disabled={seeding}
-            className="inline-flex items-center gap-2 bg-gold text-dark-bg px-5 py-2.5 rounded-xl font-semibold hover:bg-gold-dim disabled:opacity-50"
+            className="inline-flex items-center gap-2 bg-gold text-dark-bg px-6 py-3 rounded-xl font-bold hover:bg-gold-dim disabled:opacity-50 transition-colors"
           >
-            <Database className="w-4 h-4" />
+            <Database className="w-5 h-5" />
             {seeding ? '생성 중...' : '초기 데이터 생성'}
           </button>
         </div>
