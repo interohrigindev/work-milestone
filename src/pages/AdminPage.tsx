@@ -6,10 +6,12 @@ import {
   MessageCircle,
   LogOut,
   Database,
+  Github,
 } from 'lucide-react';
 import { isAdminAuthenticated, logoutAdmin } from '../lib/auth';
 import Header from '../components/Header';
 import SharePanel from '../components/SharePanel';
+import GitHubPanel from '../components/GitHubPanel';
 import DayGroup from '../components/DayGroup';
 import DailyLogCard from '../components/DailyLogCard';
 import CommentSection from '../components/CommentSection';
@@ -29,7 +31,7 @@ import {
 import { seedProject, DEFAULT_PROJECT_ID } from '../lib/seed';
 import type { Project, Task, DailyLog, Comment } from '../types';
 
-type TabId = 'schedule' | 'logs' | 'comments';
+type TabId = 'schedule' | 'logs' | 'comments' | 'github';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -254,6 +256,21 @@ export default function AdminPage() {
                 </span>
               )}
             </button>
+            {/* GitHub tab */}
+            <button
+              onClick={() => handleTabSwitch('github')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'github'
+                  ? 'border-gold text-gold'
+                  : 'border-transparent text-text-dim hover:text-text-mid'
+              }`}
+            >
+              <Github className="w-4 h-4" />
+              GitHub
+              {project?.githubRepo && (
+                <span className="w-2 h-2 bg-status-done rounded-full" />
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -401,6 +418,15 @@ export default function AdminPage() {
             isAdmin
             onAdd={(data) => createComment(projectId, data)}
             onDelete={(id) => deleteComment(projectId, id)}
+          />
+        )}
+
+        {/* GitHub tab */}
+        {activeTab === 'github' && (
+          <GitHubPanel
+            repoUrl={project?.githubRepo ?? ''}
+            isAdmin
+            onSaveRepo={(url) => updateProject(projectId, { githubRepo: url } as Partial<Project>)}
           />
         )}
       </main>

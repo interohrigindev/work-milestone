@@ -6,6 +6,7 @@ export interface Project {
   endDate: string;
   overallProgress: number;
   currentPhase: string;
+  githubRepo: string;
   updatedAt: Date;
 }
 

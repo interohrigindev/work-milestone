@@ -33,6 +33,7 @@ export function subscribeProject(projectId: string, cb: (project: Project | null
       endDate: d.endDate ?? '',
       overallProgress: d.overallProgress ?? 0,
       currentPhase: d.currentPhase ?? '',
+      githubRepo: d.githubRepo ?? '',
       updatedAt: tsToDate(d.updatedAt),
     });
   });

@@ -112,6 +112,7 @@ export async function seedProject(): Promise<string> {
     endDate: '2026-03-19',
     overallProgress: 0,
     currentPhase: '준비중',
+    githubRepo: '',
   });
 
   // Create tasks

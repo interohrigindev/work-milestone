@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { ClipboardList, FileText, MessageCircle } from 'lucide-react';
+import { ClipboardList, FileText, MessageCircle, Github } from 'lucide-react';
 import Header from '../components/Header';
 import DayGroup from '../components/DayGroup';
 import DailyLogCard from '../components/DailyLogCard';
 import CommentSection from '../components/CommentSection';
+import GitHubPanel from '../components/GitHubPanel';
 import {
   subscribeProject,
   subscribeTasks,
@@ -15,7 +16,7 @@ import {
 import { DEFAULT_PROJECT_ID } from '../lib/seed';
 import type { Project, Task, DailyLog, Comment } from '../types';
 
-type TabId = 'schedule' | 'logs' | 'comments';
+type TabId = 'schedule' | 'logs' | 'comments' | 'github';
 
 export default function ViewerPage() {
   const { projectId: paramId } = useParams<{ projectId: string }>();
@@ -147,6 +148,20 @@ export default function ViewerPage() {
                 </span>
               )}
             </button>
+            {/* GitHub tab - only show if repo is connected */}
+            {project?.githubRepo && (
+              <button
+                onClick={() => setActiveTab('github')}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === 'github'
+                    ? 'border-gold text-gold'
+                    : 'border-transparent text-text-dim hover:text-text-mid'
+                }`}
+              >
+                <Github className="w-4 h-4" />
+                개발 현황
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -189,6 +204,10 @@ export default function ViewerPage() {
             tasks={tasks}
             onAdd={handleAddComment}
           />
+        )}
+
+        {activeTab === 'github' && project?.githubRepo && (
+          <GitHubPanel repoUrl={project.githubRepo} />
         )}
       </main>
 
