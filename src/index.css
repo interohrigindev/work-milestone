@@ -1,1 +1,42 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: 'Pretendard', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --color-dark-bg: #0B0E14;
+  --color-dark-card: #111620;
+  --color-dark-card-hover: #161C28;
+  --color-dark-border: #1E2736;
+  --color-dark-border-light: #2A3444;
+
+  --color-gold: #D4A853;
+  --color-gold-dim: #B8923F;
+  --color-gold-glow: #D4A85320;
+
+  --color-text-bright: #E2E8F0;
+  --color-text-mid: #8892A5;
+  --color-text-dim: #5A6478;
+
+  --color-status-done: #4ADE80;
+  --color-status-progress: #F59E0B;
+  --color-status-pending: #6B7280;
+  --color-status-blocked: #EF4444;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2A3444 transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+input, textarea, select {
+  font-family: var(--font-sans);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}

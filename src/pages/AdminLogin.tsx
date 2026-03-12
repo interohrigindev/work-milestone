@@ -23,29 +23,30 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-dark-card rounded-2xl border border-dark-border p-8 shadow-xl">
           <div className="flex flex-col items-center mb-6">
-            <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
-              <Lock className="w-7 h-7 text-blue-600" />
+            <div className="w-14 h-14 bg-gold/10 border border-gold/20 rounded-2xl flex items-center justify-center mb-4">
+              <Lock className="w-7 h-7 text-gold" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">관리자 로그인</h1>
-            <p className="text-sm text-gray-500 mt-1">프로젝트를 관리하려면 비밀번호를 입력하세요</p>
+            <h1 className="text-xl font-bold text-text-bright">관리자 로그인</h1>
+            <p className="text-sm text-text-dim mt-1">프로젝트를 관리하려면 비밀번호를 입력하세요</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               type="password"
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-dark-border border border-dark-border-light rounded-xl px-4 py-3 text-sm text-text-bright placeholder-text-dim focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
               placeholder="비밀번호"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoFocus
             />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-status-blocked text-sm">{error}</p>}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="w-full bg-gold text-dark-bg py-3 rounded-xl font-bold hover:bg-gold-dim transition-colors disabled:opacity-50"
             >
               {loading ? '확인 중...' : '로그인'}
             </button>
