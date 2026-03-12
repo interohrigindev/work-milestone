@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if true;
+
+      match /tasks/{taskId} {
+        allow read: if true;
+        allow write: if true;
+      }
+      match /dailyLogs/{logId} {
+        allow read: if true;
+        allow write: if true;
+      }
+      match /comments/{commentId} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+  }
+}
