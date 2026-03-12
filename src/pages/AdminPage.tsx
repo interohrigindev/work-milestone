@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ClipboardList,
   FileText,
@@ -7,6 +7,7 @@ import {
   LogOut,
   Database,
   Github,
+  ArrowLeft,
 } from 'lucide-react';
 import { isAdminAuthenticated, logoutAdmin } from '../lib/auth';
 import Header from '../components/Header';
@@ -35,7 +36,8 @@ type TabId = 'schedule' | 'logs' | 'comments' | 'github';
 
 export default function AdminPage() {
   const navigate = useNavigate();
-  const projectId = DEFAULT_PROJECT_ID;
+  const { projectId: paramId } = useParams<{ projectId: string }>();
+  const projectId = paramId || DEFAULT_PROJECT_ID;
 
   const [project, setProject] = useState<Project | null>(null);
   const [projectLoaded, setProjectLoaded] = useState(false);
@@ -200,7 +202,14 @@ export default function AdminPage() {
       {/* Admin toolbar */}
       <div className="bg-dark-card/80 border-b border-dark-border">
         <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/admin')}
+              className="inline-flex items-center gap-1.5 text-xs text-text-dim hover:text-gold"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> 대시보드
+            </button>
+            <span className="text-dark-border">|</span>
             <button
               onClick={handleSeed}
               disabled={seeding}

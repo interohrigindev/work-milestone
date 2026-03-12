@@ -20,6 +20,39 @@ function tsToDate(ts: unknown): Date {
   return new Date();
 }
 
+// ---- Projects (list all) ----
+export function subscribeAllProjects(cb: (projects: Project[]) => void) {
+  const q = query(collection(db, 'projects'), orderBy('updatedAt', 'desc'));
+  return onSnapshot(q, (snap) => {
+    cb(snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        title: data.title ?? '',
+        subtitle: data.subtitle ?? '',
+        startDate: data.startDate ?? '',
+        endDate: data.endDate ?? '',
+        overallProgress: data.overallProgress ?? 0,
+        currentPhase: data.currentPhase ?? '',
+        githubRepo: data.githubRepo ?? '',
+        updatedAt: tsToDate(data.updatedAt),
+      } as Project;
+    }));
+  });
+}
+
+export async function createNewProject(data: Omit<Project, 'id' | 'updatedAt'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'projects'), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function deleteProject(projectId: string) {
+  return deleteDoc(doc(db, 'projects', projectId));
+}
+
 // ---- Project ----
 export function subscribeProject(projectId: string, cb: (project: Project | null) => void) {
   return onSnapshot(doc(db, 'projects', projectId), (snap) => {

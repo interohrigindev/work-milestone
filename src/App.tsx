@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ViewerPage from './pages/ViewerPage';
 import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 import AdminPage from './pages/AdminPage';
 
 export default function App() {
@@ -10,7 +11,8 @@ export default function App() {
         <Route path="/" element={<ViewerPage />} />
         <Route path="/view/:projectId" element={<ViewerPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/project/:projectId" element={<AdminPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
