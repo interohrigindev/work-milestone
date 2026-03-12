@@ -15,7 +15,7 @@ import {
   Activity,
   Save,
 } from 'lucide-react';
-import { fetchGitHubStats, parseRepoSlug } from '../lib/github';
+import { fetchGitHubStats, parseRepoSlug, getGitHubToken, setGitHubToken } from '../lib/github';
 import type { GitHubStats } from '../types/github';
 
 interface Props {
@@ -29,6 +29,8 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [inputUrl, setInputUrl] = useState(repoUrl);
+  const [token, setToken] = useState(getGitHubToken);
+  const [showToken, setShowToken] = useState(false);
 
   async function loadStats(url: string) {
     if (!url) return;
@@ -52,6 +54,12 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
     if (!slug) { setError('올바른 GitHub URL을 입력하세요.'); return; }
     onSaveRepo?.(inputUrl.trim());
     loadStats(inputUrl.trim());
+  }
+
+  function handleSaveToken() {
+    setGitHubToken(token);
+    setShowToken(false);
+    if (repoUrl || inputUrl) loadStats(repoUrl || inputUrl);
   }
 
   // Derived stats for non-developer-friendly display
@@ -133,10 +141,54 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
       {/* Admin: repo URL input */}
       {isAdmin && (
         <div className="bg-dark-card rounded-2xl border border-dark-border p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Github className="w-5 h-5 text-text-bright" />
-            <h3 className="text-sm font-bold text-text-bright">GitHub 레포지토리 연결</h3>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Github className="w-5 h-5 text-text-bright" />
+              <h3 className="text-sm font-bold text-text-bright">GitHub 레포지토리 연결</h3>
+            </div>
+            <button
+              onClick={() => setShowToken(!showToken)}
+              className="text-[11px] text-text-dim hover:text-gold transition-colors"
+            >
+              {getGitHubToken() ? '🔑 토큰 설정됨' : '🔒 Private 레포?'}
+            </button>
           </div>
+
+          {/* Token input */}
+          {showToken && (
+            <div className="bg-dark-bg rounded-xl p-3 mb-3 border border-dark-border">
+              <p className="text-xs text-text-dim mb-2">
+                Private 레포는 GitHub Personal Access Token이 필요합니다.<br />
+                <span className="text-gold">GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens</span>에서 생성하세요.
+                <br />권한: <span className="text-text-mid">Repository access → 해당 레포 선택, Permissions → Contents/Issues/Pull requests (Read)</span>
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  className="flex-1 bg-dark-border border border-dark-border-light rounded-lg px-3 py-2 text-xs text-text-bright placeholder-text-dim font-mono focus:outline-none focus:border-gold/40"
+                  placeholder="github_pat_xxxxxxxxxxxx..."
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                />
+                <button
+                  onClick={handleSaveToken}
+                  className="bg-gold text-dark-bg px-3 py-2 rounded-lg text-xs font-bold hover:bg-gold-dim shrink-0"
+                >
+                  저장
+                </button>
+                {getGitHubToken() && (
+                  <button
+                    onClick={() => { setGitHubToken(''); setToken(''); setShowToken(false); }}
+                    className="bg-dark-border text-text-dim px-3 py-2 rounded-lg text-xs hover:bg-dark-border-light shrink-0"
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-text-dim mt-1.5">* 토큰은 이 브라우저에만 저장됩니다 (서버 전송 없음)</p>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <input
               className="flex-1 bg-dark-border border border-dark-border-light rounded-xl px-4 py-2.5 text-sm text-text-bright placeholder-text-dim font-mono focus:outline-none focus:border-gold/40"
@@ -151,7 +203,19 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
               <Save className="w-4 h-4" /> 연결
             </button>
           </div>
-          {error && <p className="text-status-blocked text-xs mt-2">{error}</p>}
+          {error && (
+            <div className="mt-3 bg-status-blocked/10 border border-status-blocked/20 rounded-xl p-3">
+              <p className="text-status-blocked text-xs">{error}</p>
+              {!getGitHubToken() && error.includes('토큰') && (
+                <button
+                  onClick={() => setShowToken(true)}
+                  className="text-xs text-gold hover:text-gold-dim font-semibold mt-1"
+                >
+                  → 토큰 설정하기
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

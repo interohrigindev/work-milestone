@@ -9,16 +9,32 @@ import type {
 
 const API = 'https://api.github.com';
 
+// Token is stored in localStorage for persistence across sessions
+const TOKEN_KEY = 'github_pat';
+
+export function getGitHubToken(): string {
+  return localStorage.getItem(TOKEN_KEY) ?? '';
+}
+
+export function setGitHubToken(token: string) {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
+
 function headers(): HeadersInit {
-  return { Accept: 'application/vnd.github+json' };
+  const h: Record<string, string> = { Accept: 'application/vnd.github+json' };
+  const token = getGitHubToken();
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
 }
 
 /** Parse "owner/repo" from a GitHub URL or "owner/repo" string */
 export function parseRepoSlug(input: string): string | null {
-  // https://github.com/owner/repo or https://github.com/owner/repo.git
   const urlMatch = input.match(/github\.com\/([^/]+\/[^/.\s]+)/);
   if (urlMatch) return urlMatch[1];
-  // owner/repo format
   const slugMatch = input.match(/^([^/\s]+\/[^/\s]+)$/);
   if (slugMatch) return slugMatch[1];
   return null;
@@ -26,6 +42,16 @@ export function parseRepoSlug(input: string): string | null {
 
 async function fetchJSON<T>(url: string): Promise<T> {
   const res = await fetch(url, { headers: headers() });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error('GitHub 인증 실패. 토큰을 확인해 주세요.');
+  }
+  if (res.status === 404) {
+    const token = getGitHubToken();
+    if (!token) {
+      throw new Error('레포지토리를 찾을 수 없습니다. Private 레포인 경우 GitHub 토큰을 입력해 주세요.');
+    }
+    throw new Error('레포지토리를 찾을 수 없습니다. URL과 토큰 권한을 확인해 주세요.');
+  }
   if (!res.ok) throw new Error(`GitHub API ${res.status}: ${res.statusText}`);
   return res.json();
 }
@@ -63,7 +89,6 @@ async function fetchCommits(slug: string, perPage = 30): Promise<GitHubCommit[]>
 }
 
 async function fetchPRs(slug: string): Promise<GitHubPR[]> {
-  // Fetch both open and recently closed PRs
   const [openData, closedData] = await Promise.all([
     fetchJSON<Record<string, unknown>[]>(`${API}/repos/${slug}/pulls?state=open&per_page=20`),
     fetchJSON<Record<string, unknown>[]>(`${API}/repos/${slug}/pulls?state=closed&per_page=10&sort=updated&direction=desc`),
@@ -87,7 +112,6 @@ async function fetchIssues(slug: string): Promise<GitHubIssue[]> {
     fetchJSON<Record<string, unknown>[]>(`${API}/repos/${slug}/issues?state=closed&per_page=20&sort=updated&direction=desc`),
   ]);
   const all = [...openData, ...closedData];
-  // Filter out PRs (GitHub returns PRs in issues endpoint)
   return all
     .filter((i) => !i.pull_request)
     .map((i) => ({
@@ -109,11 +133,7 @@ async function fetchBranches(slug: string, defaultBranch: string): Promise<GitHu
   return data.map((b) => ({
     name: b.name as string,
     isDefault: b.name === defaultBranch,
-    lastCommitDate: (
-      (b.commit as Record<string, unknown>)?.commit as Record<string, unknown>
-    )
-      ? ''
-      : '',
+    lastCommitDate: '',
   }));
 }
 
@@ -135,7 +155,6 @@ export async function fetchGitHubStats(repoInput: string): Promise<GitHubStats> 
     fetchLanguages(slug),
   ]);
 
-  // Aggregate commits by day
   const commitsByDay: Record<string, number> = {};
   for (const c of commits) {
     const day = c.date.slice(0, 10);
