@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { ClipboardList, FileText, MessageCircle } from 'lucide-react';
 import Header from '../components/Header';
@@ -16,12 +16,6 @@ import { DEFAULT_PROJECT_ID } from '../lib/seed';
 import type { Project, Task, DailyLog, Comment } from '../types';
 
 type TabId = 'schedule' | 'logs' | 'comments';
-
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'schedule', label: '공정표', icon: <ClipboardList className="w-4 h-4" /> },
-  { id: 'logs', label: '데일리 로그', icon: <FileText className="w-4 h-4" /> },
-  { id: 'comments', label: '의견', icon: <MessageCircle className="w-4 h-4" /> },
-];
 
 export default function ViewerPage() {
   const { projectId: paramId } = useParams<{ projectId: string }>();
@@ -43,6 +37,20 @@ export default function ViewerPage() {
     return () => unsubs.forEach((u) => u());
   }, [projectId]);
 
+  // Check if any daily log was created in the last 24 hours
+  const hasNewLog = useMemo(() => {
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    return logs.some((l) => l.createdAt.getTime() > dayAgo);
+  }, [logs]);
+
+  // Count recently changed tasks (completed within 24 hours)
+  const recentTaskCount = useMemo(() => {
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    return tasks.filter(
+      (t) => t.completedAt && new Date(t.completedAt).getTime() > dayAgo
+    ).length;
+  }, [tasks]);
+
   if (!project) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
@@ -61,7 +69,6 @@ export default function ViewerPage() {
   }, {});
   const days = Object.keys(dayGroups).map(Number).sort();
 
-  // Day category labels
   const dayCategories: Record<number, string> = {
     1: '기반 설정 + DB',
     2: '채용 CRUD',
@@ -86,32 +93,66 @@ export default function ViewerPage() {
       <div className="sticky top-0 z-20 bg-dark-bg border-b border-dark-border">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex gap-1 overflow-x-auto no-scrollbar">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-gold text-gold'
-                    : 'border-transparent text-text-dim hover:text-text-mid'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-                {tab.id === 'comments' && comments.length > 0 && (
-                  <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full">
-                    {comments.length}
-                  </span>
-                )}
-              </button>
-            ))}
+            {/* Schedule tab */}
+            <button
+              onClick={() => setActiveTab('schedule')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'schedule'
+                  ? 'border-gold text-gold'
+                  : 'border-transparent text-text-dim hover:text-text-mid'
+              }`}
+            >
+              <ClipboardList className="w-4 h-4" />
+              공정표
+              {recentTaskCount > 0 && (
+                <span className="text-[10px] bg-status-blocked text-white px-1.5 py-0.5 rounded-full font-bold animate-pulse">
+                  {recentTaskCount} NEW
+                </span>
+              )}
+            </button>
+            {/* Logs tab */}
+            <button
+              onClick={() => setActiveTab('logs')}
+              className={`relative flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'logs'
+                  ? 'border-gold text-gold'
+                  : 'border-transparent text-text-dim hover:text-text-mid'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              데일리 로그
+              {hasNewLog && activeTab !== 'logs' && (
+                <span className="w-2 h-2 bg-status-blocked rounded-full animate-pulse" />
+              )}
+              {logs.length > 0 && (
+                <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full font-mono">
+                  {logs.length}
+                </span>
+              )}
+            </button>
+            {/* Comments tab */}
+            <button
+              onClick={() => setActiveTab('comments')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'comments'
+                  ? 'border-gold text-gold'
+                  : 'border-transparent text-text-dim hover:text-text-mid'
+              }`}
+            >
+              <MessageCircle className="w-4 h-4" />
+              의견
+              {comments.length > 0 && (
+                <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full font-mono">
+                  {comments.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Tab content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
-        {/* Schedule tab */}
         {activeTab === 'schedule' && (
           <div>
             {days.map((day) => (
@@ -131,7 +172,6 @@ export default function ViewerPage() {
           </div>
         )}
 
-        {/* Daily logs tab */}
         {activeTab === 'logs' && (
           <div className="space-y-4">
             {logs.length === 0 && (
@@ -143,7 +183,6 @@ export default function ViewerPage() {
           </div>
         )}
 
-        {/* Comments tab */}
         {activeTab === 'comments' && (
           <CommentSection
             comments={comments}

@@ -49,6 +49,11 @@ export default function TaskCard({ task, comments, isAdmin, onUpdate, onAddComme
 
   const isDone = task.status === 'done';
 
+  // "NEW" badge: completed within the last 24 hours
+  const isRecent = task.completedAt
+    ? Date.now() - new Date(task.completedAt).getTime() < 24 * 60 * 60 * 1000
+    : false;
+
   return (
     <div
       className={`bg-dark-card rounded-xl border transition-all duration-200 ${
@@ -78,6 +83,11 @@ export default function TaskCard({ task, comments, isAdmin, onUpdate, onAddComme
             <span className={`font-semibold text-sm ${isDone ? 'text-text-dim line-through' : 'text-text-bright'}`}>
               {task.title}
             </span>
+            {isRecent && (
+              <span className="text-[10px] font-bold bg-status-blocked text-white px-1.5 py-0.5 rounded-full leading-none animate-pulse">
+                NEW
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-dark-border/50 text-text-dim">

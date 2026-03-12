@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ClipboardList,
@@ -6,10 +6,10 @@ import {
   MessageCircle,
   LogOut,
   Database,
-  Link as LinkIcon,
 } from 'lucide-react';
 import { isAdminAuthenticated, logoutAdmin } from '../lib/auth';
 import Header from '../components/Header';
+import SharePanel from '../components/SharePanel';
 import DayGroup from '../components/DayGroup';
 import DailyLogCard from '../components/DailyLogCard';
 import CommentSection from '../components/CommentSection';
@@ -31,12 +31,6 @@ import type { Project, Task, DailyLog, Comment } from '../types';
 
 type TabId = 'schedule' | 'logs' | 'comments';
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'schedule', label: '공정표', icon: <ClipboardList className="w-4 h-4" /> },
-  { id: 'logs', label: '데일리 로그', icon: <FileText className="w-4 h-4" /> },
-  { id: 'comments', label: '의견', icon: <MessageCircle className="w-4 h-4" /> },
-];
-
 export default function AdminPage() {
   const navigate = useNavigate();
   const projectId = DEFAULT_PROJECT_ID;
@@ -48,6 +42,19 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabId>('schedule');
   const [seeding, setSeeding] = useState(false);
   const [showLogForm, setShowLogForm] = useState(false);
+
+  // Comment read tracking
+  const [lastReadCommentCount, setLastReadCommentCount] = useState(() => {
+    const stored = localStorage.getItem('admin_read_comments');
+    return stored ? Number(stored) : 0;
+  });
+  const unreadCommentCount = Math.max(0, comments.length - lastReadCommentCount);
+
+  // Mark comments as read when switching to comments tab
+  const markCommentsRead = useCallback(() => {
+    setLastReadCommentCount(comments.length);
+    localStorage.setItem('admin_read_comments', String(comments.length));
+  }, [comments.length]);
 
   // Log form state
   const [logDay, setLogDay] = useState(1);
@@ -121,10 +128,9 @@ export default function AdminPage() {
     navigate('/admin/login');
   }
 
-  function copyViewerLink() {
-    const url = `${window.location.origin}/view/${projectId}`;
-    navigator.clipboard.writeText(url);
-    alert('뷰어 링크가 복사되었습니다!');
+  function handleTabSwitch(tabId: TabId) {
+    setActiveTab(tabId);
+    if (tabId === 'comments') markCommentsRead();
   }
 
   // Group tasks by day
@@ -170,13 +176,6 @@ export default function AdminPage() {
         <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <button
-              onClick={copyViewerLink}
-              className="inline-flex items-center gap-1.5 text-xs text-gold hover:text-gold-dim font-semibold"
-            >
-              <LinkIcon className="w-3.5 h-3.5" /> 공유 링크 복사
-            </button>
-            <span className="text-dark-border-light">|</span>
-            <button
               onClick={handleSeed}
               disabled={seeding}
               className="inline-flex items-center gap-1.5 text-xs text-text-dim hover:text-text-mid"
@@ -193,24 +192,68 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* Share Panel */}
+      <div className="max-w-5xl mx-auto px-4 pt-6">
+        <SharePanel projectId={projectId} />
+      </div>
+
       {/* Tabs */}
-      <div className="sticky top-0 z-20 bg-dark-bg border-b border-dark-border">
+      <div className="sticky top-0 z-20 bg-dark-bg border-b border-dark-border mt-6">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex gap-1 overflow-x-auto no-scrollbar">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-gold text-gold'
-                    : 'border-transparent text-text-dim hover:text-text-mid'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
+            {/* Schedule tab */}
+            <button
+              onClick={() => handleTabSwitch('schedule')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'schedule'
+                  ? 'border-gold text-gold'
+                  : 'border-transparent text-text-dim hover:text-text-mid'
+              }`}
+            >
+              <ClipboardList className="w-4 h-4" />
+              공정표
+            </button>
+            {/* Logs tab */}
+            <button
+              onClick={() => handleTabSwitch('logs')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'logs'
+                  ? 'border-gold text-gold'
+                  : 'border-transparent text-text-dim hover:text-text-mid'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              데일리 로그
+              {logs.length > 0 && (
+                <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full font-mono">
+                  {logs.length}
+                </span>
+              )}
+            </button>
+            {/* Comments tab */}
+            <button
+              onClick={() => handleTabSwitch('comments')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'comments'
+                  ? 'border-gold text-gold'
+                  : 'border-transparent text-text-dim hover:text-text-mid'
+              }`}
+            >
+              <MessageCircle className="w-4 h-4" />
+              의견
+              {unreadCommentCount > 0 && (
+                <span className="relative flex items-center">
+                  <span className="text-xs bg-status-blocked text-white px-1.5 py-0.5 rounded-full font-mono font-bold animate-pulse">
+                    {unreadCommentCount}
+                  </span>
+                </span>
+              )}
+              {unreadCommentCount === 0 && comments.length > 0 && (
+                <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full font-mono">
+                  {comments.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -252,7 +295,6 @@ export default function AdminPage() {
         {/* Daily logs tab */}
         {activeTab === 'logs' && (
           <div>
-            {/* Add log button */}
             <div className="mb-4">
               <button
                 onClick={() => setShowLogForm(!showLogForm)}
@@ -262,7 +304,6 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* Log form */}
             {showLogForm && (
               <form onSubmit={handleAddLog} className="bg-dark-card rounded-xl border border-dark-border p-5 mb-6 space-y-4">
                 <div className="flex gap-3">
@@ -287,7 +328,6 @@ export default function AdminPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="text-xs text-text-dim block mb-1">📌 오늘 한 일</label>
                   <textarea
@@ -298,7 +338,6 @@ export default function AdminPage() {
                     placeholder="오늘의 진행 상황..."
                   />
                 </div>
-
                 <div>
                   <label className="text-xs text-text-dim block mb-1">✅ 완료 항목 (줄바꿈으로 구분)</label>
                   <textarea
@@ -309,7 +348,6 @@ export default function AdminPage() {
                     placeholder="P-01 완료&#10;DB 12개 테이블 생성"
                   />
                 </div>
-
                 <div>
                   <label className="text-xs text-text-dim block mb-1">🚧 이슈/차단 (줄바꿈으로 구분)</label>
                   <textarea
@@ -320,7 +358,6 @@ export default function AdminPage() {
                     placeholder="Whisper API 키 발급 대기"
                   />
                 </div>
-
                 <div>
                   <label className="text-xs text-text-dim block mb-1">📋 내일 계획</label>
                   <textarea
@@ -331,7 +368,6 @@ export default function AdminPage() {
                     placeholder="채용 대시보드 + 공고 CRUD"
                   />
                 </div>
-
                 <button
                   type="submit"
                   className="bg-gold text-dark-bg px-5 py-2 rounded-xl text-sm font-bold hover:bg-gold-dim"
