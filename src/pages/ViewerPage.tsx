@@ -1,8 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ClipboardList, FileText, MessageCircle, Github, FolderOpen } from 'lucide-react';
-import Header from '../components/Header';
-import DayGroup from '../components/DayGroup';
+import {
+  FileText,
+  MessageCircle,
+  Github,
+  FolderOpen,
+  Activity,
+} from 'lucide-react';
+import Sidebar from '../components/Sidebar';
+import ViewSwitcher from '../components/ViewSwitcher';
+import BoardTableView from '../components/BoardTableView';
+import KanbanView from '../components/KanbanView';
+import TimelineView from '../components/TimelineView';
 import DailyLogCard from '../components/DailyLogCard';
 import CommentSection from '../components/CommentSection';
 import GitHubPanel from '../components/GitHubPanel';
@@ -15,9 +24,9 @@ import {
   subscribeComments,
   createComment,
 } from '../lib/firestore';
-import type { Project, Task, DailyLog, Comment } from '../types';
+import type { Project, Task, DailyLog, Comment, ViewMode } from '../types';
 
-type TabId = 'schedule' | 'logs' | 'comments' | 'github';
+type PanelTab = 'board' | 'logs' | 'comments' | 'github';
 
 /** Project list view when no projectId is specified */
 function ProjectListView() {
@@ -33,7 +42,6 @@ function ProjectListView() {
     return unsub;
   }, []);
 
-  // If only one project exists, redirect directly to it
   useEffect(() => {
     if (loaded && projects.length === 1) {
       navigate(`/view/${projects[0].id}`, { replace: true });
@@ -44,7 +52,7 @@ function ProjectListView() {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-text-dim text-sm">로딩 중...</p>
         </div>
       </div>
@@ -56,17 +64,19 @@ function ProjectListView() {
       <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-dark-card border border-dark-border rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <ClipboardList className="w-8 h-8 text-gold" />
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-white font-bold text-sm">IO</span>
+            </div>
           </div>
           <h1 className="text-2xl font-bold text-text-bright mb-2">INTEROHRIGIN</h1>
-          <p className="text-text-mid mb-1">프로젝트 트래커</p>
+          <p className="text-text-mid mb-1">프로젝트 관리 플랫폼</p>
           <p className="text-sm text-text-dim mb-8">
             아직 등록된 프로젝트가 없습니다.<br />
             관리자가 프로젝트를 생성하면 이 화면에 목록이 표시됩니다.
           </p>
           <a
             href="/admin/login"
-            className="inline-flex items-center gap-2 bg-gold text-dark-bg px-6 py-3 rounded-xl font-bold hover:bg-gold-dim transition-colors"
+            className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-hover transition-colors"
           >
             관리자로 시작하기
           </a>
@@ -75,13 +85,17 @@ function ProjectListView() {
     );
   }
 
-  // Multiple projects — show list (single project auto-redirects above)
   return (
     <div className="min-h-screen bg-dark-bg">
-      <div className="bg-dark-card border-b border-dark-border">
+      <div className="bg-dark-surface border-b border-dark-border">
         <div className="max-w-5xl mx-auto px-4 py-5">
-          <h1 className="text-lg font-bold text-gold">INTEROHRIGIN</h1>
-          <p className="text-xs text-text-dim">프로젝트 트래커</p>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-white font-bold text-xs">IO</span>
+            </div>
+            <h1 className="text-lg font-bold text-text-bright">INTEROHRIGIN</h1>
+          </div>
+          <p className="text-xs text-text-dim mt-1">프로젝트 관리 플랫폼</p>
         </div>
       </div>
 
@@ -90,17 +104,17 @@ function ProjectListView() {
           프로젝트 목록
           <span className="text-text-dim text-sm font-normal ml-2">({projects.length})</span>
         </h2>
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {projects.map((p) => (
             <div
               key={p.id}
-              className="bg-dark-card border border-dark-border rounded-xl p-5 hover:border-gold/30 transition-colors cursor-pointer group"
+              className="bg-dark-card border border-dark-border rounded-xl p-5 hover:border-primary/30 transition-all cursor-pointer group"
               onClick={() => navigate(`/view/${p.id}`)}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-text-bright font-bold truncate group-hover:text-gold transition-colors">
+                    <h3 className="text-text-bright font-bold truncate group-hover:text-primary transition-colors">
                       {p.title}
                     </h3>
                     {p.githubRepo && <Github className="w-4 h-4 text-text-dim flex-shrink-0" />}
@@ -110,12 +124,12 @@ function ProjectListView() {
                   )}
                   <div className="flex items-center gap-4 text-xs text-text-dim">
                     {p.startDate && p.endDate && (
-                      <span>{p.startDate} ~ {p.endDate}</span>
+                      <span className="font-mono">{p.startDate} ~ {p.endDate}</span>
                     )}
                     <span className="bg-dark-border px-2 py-0.5 rounded-full">{p.currentPhase}</span>
                   </div>
                 </div>
-                <div className="w-24 flex-shrink-0">
+                <div className="w-28 flex-shrink-0">
                   <ProgressBar progress={p.overallProgress} showLabel={false} size="sm" />
                   <p className="text-[10px] text-text-dim text-center mt-1 font-mono">{p.overallProgress}%</p>
                 </div>
@@ -124,26 +138,27 @@ function ProjectListView() {
           ))}
         </div>
       </main>
-
-      <footer className="text-center py-8 text-xs text-text-dim border-t border-dark-border">
-        <span className="text-gold">INTEROHRIGIN</span> — 프로젝트 트래커
-      </footer>
     </div>
   );
 }
 
-/** Single project detail view */
+/** Single project detail view with Monday.com layout */
 function ProjectDetailView({ projectId }: { projectId: string }) {
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [projectLoaded, setProjectLoaded] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [activeTab, setActiveTab] = useState<TabId>('schedule');
+  const [activePanel, setActivePanel] = useState<PanelTab>('board');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
   useEffect(() => {
     setProjectLoaded(false);
     const unsubs = [
+      subscribeAllProjects(setAllProjects),
       subscribeProject(projectId, (p) => {
         setProject(p);
         setProjectLoaded(true);
@@ -155,23 +170,20 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
     return () => unsubs.forEach((u) => u());
   }, [projectId]);
 
-  const hasNewLog = useMemo(() => {
-    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-    return logs.some((l) => l.createdAt.getTime() > dayAgo);
-  }, [logs]);
-
-  const recentTaskCount = useMemo(() => {
-    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-    return tasks.filter(
-      (t) => t.completedAt && new Date(t.completedAt).getTime() > dayAgo
-    ).length;
-  }, [tasks]);
+  // Filter tasks
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (filterStatus && t.status !== filterStatus) return false;
+      return true;
+    });
+  }, [tasks, searchQuery, filterStatus]);
 
   if (!projectLoaded) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-text-dim text-sm">로딩 중...</p>
         </div>
       </div>
@@ -186,12 +198,10 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
             <FolderOpen className="w-8 h-8 text-text-dim" />
           </div>
           <h1 className="text-xl font-bold text-text-bright mb-2">프로젝트를 찾을 수 없습니다</h1>
-          <p className="text-sm text-text-dim mb-8">
-            링크가 올바른지 확인해 주세요.
-          </p>
+          <p className="text-sm text-text-dim mb-8">링크가 올바른지 확인해 주세요.</p>
           <a
             href="/"
-            className="inline-flex items-center gap-2 bg-gold text-dark-bg px-6 py-3 rounded-xl font-bold hover:bg-gold-dim transition-colors"
+            className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-hover transition-colors"
           >
             홈으로 돌아가기
           </a>
@@ -199,20 +209,6 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
       </div>
     );
   }
-
-  const dayGroups = tasks.reduce<Record<number, Task[]>>((acc, t) => {
-    (acc[t.day] ??= []).push(t);
-    return acc;
-  }, {});
-  const days = Object.keys(dayGroups).map(Number).sort();
-
-  const dayCategories: Record<number, string> = {
-    1: '기반 설정 + DB',
-    2: '채용 CRUD',
-    3: '면접 + 분석 엔진',
-    4: '핵심 엔진 + 리포트',
-    5: '완성 + 배포',
-  };
 
   function handleAddComment(data: { content: string; author: string; taskId: string | null; taskTitle: string }) {
     createComment(projectId, data);
@@ -222,130 +218,154 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
     createComment(projectId, { author, content, taskId, taskTitle });
   }
 
+  const doneCount = tasks.filter(t => t.status === 'done').length;
+  const inProgressCount = tasks.filter(t => t.status === 'in_progress').length;
+  const blockedCount = tasks.filter(t => t.status === 'blocked').length;
+
   return (
-    <div className="min-h-screen bg-dark-bg">
-      <Header project={project} tasks={tasks} />
+    <div className="min-h-screen bg-dark-bg flex">
+      {/* Sidebar */}
+      <Sidebar
+        projects={allProjects}
+        currentProjectId={projectId}
+      />
 
-      {/* Tabs */}
-      <div className="sticky top-0 z-20 bg-dark-bg border-b border-dark-border">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex gap-1 overflow-x-auto no-scrollbar">
-            <button
-              onClick={() => setActiveTab('schedule')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === 'schedule'
-                  ? 'border-gold text-gold'
-                  : 'border-transparent text-text-dim hover:text-text-mid'
-              }`}
-            >
-              <ClipboardList className="w-4 h-4" />
-              공정표
-              {recentTaskCount > 0 && (
-                <span className="text-[10px] bg-status-blocked text-white px-1.5 py-0.5 rounded-full font-bold animate-pulse">
-                  {recentTaskCount} NEW
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('logs')}
-              className={`relative flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === 'logs'
-                  ? 'border-gold text-gold'
-                  : 'border-transparent text-text-dim hover:text-text-mid'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              데일리 로그
-              {hasNewLog && activeTab !== 'logs' && (
-                <span className="w-2 h-2 bg-status-blocked rounded-full animate-pulse" />
-              )}
-              {logs.length > 0 && (
-                <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full font-mono">
-                  {logs.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('comments')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === 'comments'
-                  ? 'border-gold text-gold'
-                  : 'border-transparent text-text-dim hover:text-text-mid'
-              }`}
-            >
-              <MessageCircle className="w-4 h-4" />
-              의견
-              {comments.length > 0 && (
-                <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full font-mono">
-                  {comments.length}
-                </span>
-              )}
-            </button>
-            {project?.githubRepo && (
-              <button
-                onClick={() => setActiveTab('github')}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === 'github'
-                    ? 'border-gold text-gold'
-                    : 'border-transparent text-text-dim hover:text-text-mid'
-                }`}
-              >
-                <Github className="w-4 h-4" />
-                개발 현황
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Tab content */}
-      <main className="max-w-5xl mx-auto px-4 py-6">
-        {activeTab === 'schedule' && (
-          <div>
-            {days.map((day) => (
-              <DayGroup
-                key={day}
-                day={day}
-                dayLabel={dayGroups[day][0]?.dayLabel ?? `Day ${day}`}
-                category={dayCategories[day] ?? ''}
-                tasks={dayGroups[day]}
-                comments={comments}
-                onAddComment={handleAddTaskComment}
-              />
-            ))}
-            {days.length === 0 && (
-              <p className="text-center text-text-dim py-16">작업이 없습니다.</p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'logs' && (
-          <div className="space-y-4">
-            {logs.length === 0 && (
-              <p className="text-center text-text-dim py-16">아직 로그가 없습니다.</p>
-            )}
-            {logs.map((log) => (
-              <DailyLogCard key={log.id} log={log} />
-            ))}
-          </div>
-        )}
-
-        {activeTab === 'comments' && (
-          <CommentSection
-            comments={comments}
-            tasks={tasks}
-            onAdd={handleAddComment}
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* View Switcher */}
+        {activePanel === 'board' && (
+          <ViewSwitcher
+            activeView={viewMode}
+            onViewChange={setViewMode}
+            projectTitle={project.title}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            filterStatus={filterStatus}
+            onFilterStatusChange={setFilterStatus}
           />
         )}
 
-        {activeTab === 'github' && project?.githubRepo && (
-          <GitHubPanel repoUrl={project.githubRepo} />
-        )}
-      </main>
+        {/* Panel tabs */}
+        <div className="bg-dark-surface border-b border-dark-border">
+          {activePanel !== 'board' && (
+            <div className="px-6 pt-4 pb-2">
+              <h1 className="text-lg font-bold text-text-bright">{project.title}</h1>
+              <p className="text-xs text-text-dim mt-0.5">{project.subtitle}</p>
+            </div>
+          )}
+          <div className="px-6 flex items-center gap-0.5 overflow-x-auto no-scrollbar">
+            <TabBtn active={activePanel === 'board'} onClick={() => setActivePanel('board')} icon={<Activity className="w-4 h-4" />} label="보드" />
+            <TabBtn active={activePanel === 'logs'} onClick={() => setActivePanel('logs')} icon={<FileText className="w-4 h-4" />} label="데일리 로그" badge={logs.length} />
+            <TabBtn active={activePanel === 'comments'} onClick={() => setActivePanel('comments')} icon={<MessageCircle className="w-4 h-4" />} label="의견" badge={comments.length} />
+            {project.githubRepo && (
+              <TabBtn active={activePanel === 'github'} onClick={() => setActivePanel('github')} icon={<Github className="w-4 h-4" />} label="개발 현황" />
+            )}
+          </div>
+        </div>
 
-      <footer className="text-center py-8 text-xs text-text-dim border-t border-dark-border">
-        <span className="text-gold">INTEROHRIGIN</span> — 프로젝트 트래커
-      </footer>
+        {/* Stats bar */}
+        <div className="bg-dark-surface/50 border-b border-dark-border px-6 py-2 flex items-center gap-6">
+          <StatPill label="전체" value={tasks.length} color="#579BFC" />
+          <StatPill label="완료" value={doneCount} color="#00C875" />
+          <StatPill label="진행중" value={inProgressCount} color="#FDAB3D" />
+          <StatPill label="막힘" value={blockedCount} color="#E2445C" />
+          <div className="flex-1" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-dim">진행률</span>
+            <div className="w-32 h-2 bg-dark-border rounded-full overflow-hidden">
+              <div
+                className="h-full bg-status-done rounded-full transition-all duration-500"
+                style={{ width: `${project.overallProgress}%` }}
+              />
+            </div>
+            <span className="font-mono text-xs font-bold text-text-bright">{project.overallProgress}%</span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {activePanel === 'board' && viewMode === 'table' && (
+            <BoardTableView
+              tasks={filteredTasks}
+              comments={comments}
+              onAddComment={handleAddTaskComment}
+            />
+          )}
+          {activePanel === 'board' && viewMode === 'kanban' && (
+            <KanbanView
+              tasks={filteredTasks}
+              comments={comments}
+              onAddComment={handleAddTaskComment}
+            />
+          )}
+          {activePanel === 'board' && viewMode === 'timeline' && (
+            <TimelineView
+              tasks={filteredTasks}
+              projectStartDate={project.startDate}
+              projectEndDate={project.endDate}
+            />
+          )}
+
+          {activePanel === 'logs' && (
+            <div className="max-w-4xl mx-auto px-6 py-6 space-y-4">
+              {logs.length === 0 && (
+                <p className="text-center text-text-dim py-16">아직 로그가 없습니다.</p>
+              )}
+              {logs.map((log) => (
+                <DailyLogCard key={log.id} log={log} />
+              ))}
+            </div>
+          )}
+
+          {activePanel === 'comments' && (
+            <div className="max-w-4xl mx-auto px-6 py-6">
+              <CommentSection
+                comments={comments}
+                tasks={tasks}
+                onAdd={handleAddComment}
+              />
+            </div>
+          )}
+
+          {activePanel === 'github' && project.githubRepo && (
+            <div className="max-w-4xl mx-auto px-6 py-6">
+              <GitHubPanel repoUrl={project.githubRepo} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper
+function TabBtn({ active, onClick, icon, label, badge }: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: number;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+        active ? 'border-primary text-primary' : 'border-transparent text-text-dim hover:text-text-mid'
+      }`}
+    >
+      {icon}
+      {label}
+      {badge !== undefined && badge > 0 && (
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function StatPill({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="w-2 h-2 rounded" style={{ backgroundColor: color }} />
+      <span className="text-[11px] text-text-dim">{label}</span>
+      <span className="text-[11px] font-bold font-mono text-text-bright">{value}</span>
     </div>
   );
 }
@@ -353,7 +373,6 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
 export default function ViewerPage() {
   const { projectId: paramId } = useParams<{ projectId: string }>();
 
-  // If no projectId in URL, show project list (or auto-redirect if only one)
   if (!paramId) {
     return <ProjectListView />;
   }

@@ -113,6 +113,12 @@ export function subscribeTasks(projectId: string, cb: (tasks: Task[]) => void) {
         color: data.color ?? '#6B7280',
         completedAt: data.completedAt ? tsToDate(data.completedAt) : null,
         notes: data.notes ?? '',
+        // Monday.com fields
+        assignee: data.assignee ?? '',
+        priority: data.priority ?? 'medium',
+        dueDate: data.dueDate ?? '',
+        groupId: data.groupId ?? '',
+        tags: data.tags ?? [],
       } as Task;
     }));
   });

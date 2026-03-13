@@ -148,7 +148,7 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
             </div>
             <button
               onClick={() => setShowToken(!showToken)}
-              className="text-[11px] text-text-dim hover:text-gold transition-colors"
+              className="text-[11px] text-text-dim hover:text-primary transition-colors"
             >
               {getGitHubToken() ? '🔑 토큰 설정됨' : '🔒 Private 레포?'}
             </button>
@@ -156,23 +156,23 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
 
           {/* Token input */}
           {showToken && (
-            <div className="bg-dark-bg rounded-xl p-3 mb-3 border border-dark-border">
+            <div className="bg-dark-surface rounded-xl p-3 mb-3 border border-dark-border">
               <p className="text-xs text-text-dim mb-2">
                 Private 레포는 GitHub Personal Access Token이 필요합니다.<br />
-                <span className="text-gold">GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens</span>에서 생성하세요.
+                <span className="text-primary">GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens</span>에서 생성하세요.
                 <br />권한: <span className="text-text-mid">Repository access → 해당 레포 선택, Permissions → Contents/Issues/Pull requests (Read)</span>
               </p>
               <div className="flex gap-2">
                 <input
                   type="password"
-                  className="flex-1 bg-dark-border border border-dark-border-light rounded-lg px-3 py-2 text-xs text-text-bright placeholder-text-dim font-mono focus:outline-none focus:border-gold/40"
+                  className="flex-1 bg-dark-border border border-dark-border-light rounded-lg px-3 py-2 text-xs text-text-bright placeholder-text-dim font-mono focus:outline-none focus:border-primary/40"
                   placeholder="github_pat_xxxxxxxxxxxx..."
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
                 />
                 <button
                   onClick={handleSaveToken}
-                  className="bg-gold text-dark-bg px-3 py-2 rounded-lg text-xs font-bold hover:bg-gold-dim shrink-0"
+                  className="bg-primary text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-primary-hover shrink-0"
                 >
                   저장
                 </button>
@@ -191,14 +191,14 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
 
           <div className="flex gap-2">
             <input
-              className="flex-1 bg-dark-border border border-dark-border-light rounded-xl px-4 py-2.5 text-sm text-text-bright placeholder-text-dim font-mono focus:outline-none focus:border-gold/40"
+              className="flex-1 bg-dark-border border border-dark-border-light rounded-xl px-4 py-2.5 text-sm text-text-bright placeholder-text-dim font-mono focus:outline-none focus:border-primary/40"
               placeholder="https://github.com/owner/repo"
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
             />
             <button
               onClick={handleSave}
-              className="inline-flex items-center gap-1.5 bg-gold text-dark-bg px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gold-dim shrink-0"
+              className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary-hover shrink-0"
             >
               <Save className="w-4 h-4" /> 연결
             </button>
@@ -209,7 +209,7 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
               {!getGitHubToken() && error.includes('토큰') && (
                 <button
                   onClick={() => setShowToken(true)}
-                  className="text-xs text-gold hover:text-gold-dim font-semibold mt-1"
+                  className="text-xs text-primary hover:text-primary-hover font-semibold mt-1"
                 >
                   → 토큰 설정하기
                 </button>
@@ -222,7 +222,7 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
       {/* Loading */}
       {loading && (
         <div className="bg-dark-card rounded-2xl border border-dark-border p-8 flex items-center justify-center gap-3">
-          <RefreshCw className="w-5 h-5 text-gold animate-spin" />
+          <RefreshCw className="w-5 h-5 text-primary animate-spin" />
           <span className="text-text-mid text-sm">GitHub 데이터 분석 중...</span>
         </div>
       )}
@@ -254,7 +254,7 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => loadStats(repoUrl)}
-                  className="p-2 text-text-dim hover:text-gold rounded-lg hover:bg-gold/10 transition-colors"
+                  className="p-2 text-text-dim hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
                   title="새로고침"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -275,7 +275,7 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
           {/* 한눈에 보는 개발 현황 - Key Metrics */}
           <div className="bg-dark-card rounded-2xl border border-dark-border p-5">
             <h3 className="text-sm font-bold text-text-bright mb-4 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-gold" />
+              <TrendingUp className="w-4 h-4 text-primary" />
               개발 현황 요약
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -315,7 +315,7 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
           {/* 코드 작업 활동 타임라인 - commit heatmap */}
           <div className="bg-dark-card rounded-2xl border border-dark-border p-5">
             <h3 className="text-sm font-bold text-text-bright mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-gold" />
+              <Activity className="w-4 h-4 text-primary" />
               최근 2주 개발 활동
             </h3>
             <div className="flex items-end gap-1 h-24">
@@ -334,13 +334,13 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
                         day.count === 0
                           ? 'bg-dark-border'
                           : isToday
-                            ? 'bg-gold'
+                            ? 'bg-primary'
                             : 'bg-blue-500/70'
                       }`}
                       style={{ height: `${height}%`, minHeight: '3px' }}
                     />
                     {/* Day label */}
-                    <span className={`text-[9px] ${isToday ? 'text-gold font-bold' : 'text-text-dim'}`}>
+                    <span className={`text-[9px] ${isToday ? 'text-primary font-bold' : 'text-text-dim'}`}>
                       {new Date(day.date).getDate()}
                     </span>
                   </div>
@@ -473,7 +473,7 @@ export default function GitHubPanel({ repoUrl, isAdmin, onSaveRepo }: Props) {
           {summary.langPercents.length > 0 && (
             <div className="bg-dark-card rounded-2xl border border-dark-border p-5">
               <h3 className="text-sm font-bold text-text-bright mb-3 flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-gold" />
+                <Code2 className="w-4 h-4 text-primary" />
                 사용 기술
               </h3>
               {/* Stacked bar */}

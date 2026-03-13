@@ -27,31 +27,28 @@ export default function SharePanel({ projectId }: Props) {
     window.open(`mailto:?subject=${subject}&body=${body}`);
   }
 
-  // Simple QR code using Google Charts API
   const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(viewerUrl)}&choe=UTF-8`;
 
   return (
-    <div className="bg-dark-card rounded-2xl border border-dark-border p-5">
+    <div className="bg-dark-card rounded-xl border border-dark-border p-5">
       <div className="flex items-center gap-2 mb-3">
-        <Link2 className="w-5 h-5 text-gold" />
+        <Link2 className="w-5 h-5 text-primary" />
         <h3 className="text-sm font-bold text-text-bright">프로젝트 공유</h3>
       </div>
 
-      {/* URL display */}
-      <div className="flex items-center gap-2 bg-dark-bg rounded-xl px-3 py-2.5 border border-dark-border mb-3">
+      <div className="flex items-center gap-2 bg-dark-surface rounded-lg px-3 py-2.5 border border-dark-border mb-3">
         <span className="flex-1 text-xs text-text-mid font-mono truncate select-all">
           {viewerUrl}
         </span>
       </div>
 
-      {/* Action buttons */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <button
           onClick={handleCopy}
-          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+          className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
             copied
               ? 'bg-status-done/20 text-status-done'
-              : 'bg-gold text-dark-bg hover:bg-gold-dim'
+              : 'bg-primary text-white hover:bg-primary-hover'
           }`}
         >
           {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -59,28 +56,27 @@ export default function SharePanel({ projectId }: Props) {
         </button>
         <button
           onClick={handleKakao}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#FEE500] text-[#191919] hover:bg-[#FDD835]"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#FEE500] text-[#191919] hover:bg-[#FDD835]"
         >
           <MessageSquare className="w-3.5 h-3.5" />
-          카카오톡 공유
+          카카오톡
         </button>
         <button
           onClick={handleEmail}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-dark-border text-text-mid hover:bg-dark-border-light"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-dark-border text-text-mid hover:bg-dark-border-light"
         >
           <Mail className="w-3.5 h-3.5" />
           이메일
         </button>
         <button
           onClick={() => setShowQR(!showQR)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-dark-border text-text-mid hover:bg-dark-border-light"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-dark-border text-text-mid hover:bg-dark-border-light"
         >
           <QrCode className="w-3.5 h-3.5" />
           QR 코드
         </button>
       </div>
 
-      {/* QR Code modal */}
       {showQR && (
         <div className="relative bg-white rounded-xl p-4 inline-block">
           <button

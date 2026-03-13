@@ -1,0 +1,190 @@
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Search,
+  Settings,
+  Home,
+  Bell,
+} from 'lucide-react';
+import type { Project } from '../types';
+
+interface Props {
+  projects: Project[];
+  currentProjectId?: string;
+  isAdmin?: boolean;
+  onLogout?: () => void;
+  unreadCount?: number;
+}
+
+export default function Sidebar({ projects, currentProjectId, isAdmin, onLogout, unreadCount = 0 }: Props) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredProjects = projects.filter(p =>
+    p.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const basePath = isAdmin ? '/admin/project' : '/view';
+
+  return (
+    <aside
+      className={`sidebar-transition flex flex-col bg-dark-surface border-r border-dark-border h-screen sticky top-0 z-30 ${
+        collapsed ? 'w-[52px]' : 'w-[260px]'
+      }`}
+    >
+      {/* Logo area */}
+      <div className="flex items-center justify-between px-3 h-[52px] border-b border-dark-border shrink-0">
+        {!collapsed && (
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <span className="text-white font-bold text-xs">IO</span>
+            </div>
+            <span className="text-text-bright font-bold text-sm truncate">INTEROHRIGIN</span>
+          </div>
+        )}
+        {collapsed && (
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center mx-auto">
+            <span className="text-white font-bold text-xs">IO</span>
+          </div>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-1 rounded hover:bg-dark-card text-text-dim hover:text-text-bright transition-colors shrink-0"
+        >
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* Quick nav */}
+      <div className="px-2 py-2 space-y-0.5 border-b border-dark-border">
+        <button
+          onClick={() => navigate(isAdmin ? '/admin' : '/')}
+          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors ${
+            location.pathname === '/admin' || location.pathname === '/'
+              ? 'bg-primary/15 text-primary'
+              : 'text-text-mid hover:bg-dark-card hover:text-text-bright'
+          }`}
+        >
+          <Home className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>홈</span>}
+        </button>
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors ${
+              location.pathname === '/admin'
+                ? 'bg-primary/15 text-primary'
+                : 'text-text-mid hover:bg-dark-card hover:text-text-bright'
+            }`}
+          >
+            <LayoutDashboard className="w-4 h-4 shrink-0" />
+            {!collapsed && (
+              <span className="flex-1 text-left">대시보드</span>
+            )}
+          </button>
+        )}
+        <button
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-text-mid hover:bg-dark-card hover:text-text-bright transition-colors relative"
+        >
+          <Bell className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>알림</span>}
+          {unreadCount > 0 && (
+            <span className="absolute top-1 left-5 w-4 h-4 bg-status-blocked text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Search */}
+      {!collapsed && (
+        <div className="px-3 py-2">
+          <div className="flex items-center gap-2 bg-dark-card rounded-lg px-2.5 py-1.5 border border-dark-border">
+            <Search className="w-3.5 h-3.5 text-text-dim shrink-0" />
+            <input
+              type="text"
+              placeholder="프로젝트 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent text-xs text-text-bright placeholder-text-dim outline-none"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Project list */}
+      <div className="flex-1 overflow-y-auto px-2 py-1">
+        {!collapsed && (
+          <div className="flex items-center justify-between px-2.5 mb-1">
+            <span className="text-[10px] font-bold text-text-dim uppercase tracking-wider">워크스페이스</span>
+            {isAdmin && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="p-0.5 rounded hover:bg-dark-card text-text-dim hover:text-primary transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-0.5">
+          {filteredProjects.map((project) => {
+            const isActive = currentProjectId === project.id;
+            return (
+              <button
+                key={project.id}
+                onClick={() => navigate(`${basePath}/${project.id}`)}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all ${
+                  isActive
+                    ? 'bg-primary/15 text-primary border-l-2 border-primary'
+                    : 'text-text-mid hover:bg-dark-card hover:text-text-bright'
+                }`}
+                title={collapsed ? project.title : undefined}
+              >
+                <FolderKanban className="w-4 h-4 shrink-0" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 text-left truncate">{project.title}</span>
+                    <span className="text-[10px] font-mono text-text-dim">{project.overallProgress}%</span>
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredProjects.length === 0 && !collapsed && (
+          <p className="text-xs text-text-dim text-center py-4">프로젝트 없음</p>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-2 py-2 border-t border-dark-border space-y-0.5">
+        {isAdmin && (
+          <>
+            <button className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-text-mid hover:bg-dark-card hover:text-text-bright transition-colors">
+              <Settings className="w-4 h-4 shrink-0" />
+              {!collapsed && <span>설정</span>}
+            </button>
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-text-mid hover:bg-dark-card hover:text-status-blocked transition-colors"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              {!collapsed && <span>로그아웃</span>}
+            </button>
+          </>
+        )}
+      </div>
+    </aside>
+  );
+}

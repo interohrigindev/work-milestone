@@ -4,33 +4,58 @@
   --font-sans: 'Pretendard', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --color-dark-bg: #0B0E14;
-  --color-dark-card: #111620;
-  --color-dark-card-hover: #161C28;
-  --color-dark-border: #1E2736;
-  --color-dark-border-light: #2A3444;
+  /* Monday.com inspired dark theme */
+  --color-dark-bg: #181B34;
+  --color-dark-surface: #1F2244;
+  --color-dark-card: #282B4A;
+  --color-dark-card-hover: #323560;
+  --color-dark-border: #383B5E;
+  --color-dark-border-light: #484B70;
 
-  --color-gold: #D4A853;
-  --color-gold-dim: #B8923F;
-  --color-gold-glow: #D4A85320;
+  /* Monday.com primary colors */
+  --color-primary: #0073EA;
+  --color-primary-hover: #0060C2;
+  --color-primary-light: #CCE5FF;
+  --color-primary-dim: #0073EA30;
 
-  --color-text-bright: #E2E8F0;
-  --color-text-mid: #8892A5;
-  --color-text-dim: #5A6478;
+  /* Accent gold (legacy) */
+  --color-gold: #FDAB3D;
+  --color-gold-dim: #D9922D;
+  --color-gold-glow: #FDAB3D20;
 
-  --color-status-done: #4ADE80;
-  --color-status-progress: #F59E0B;
-  --color-status-pending: #6B7280;
-  --color-status-blocked: #EF4444;
+  /* Text */
+  --color-text-bright: #D5D8F0;
+  --color-text-mid: #9699B0;
+  --color-text-dim: #676A86;
+
+  /* Status colors (Monday.com) */
+  --color-status-done: #00C875;
+  --color-status-progress: #FDAB3D;
+  --color-status-pending: #C4C4C4;
+  --color-status-blocked: #E2445C;
+
+  /* Priority colors */
+  --color-priority-critical: #333333;
+  --color-priority-high: #E2445C;
+  --color-priority-medium: #FDAB3D;
+  --color-priority-low: #579BFC;
+
+  /* Monday.com group colors */
+  --color-group-blue: #579BFC;
+  --color-group-green: #00C875;
+  --color-group-orange: #FDAB3D;
+  --color-group-red: #E2445C;
+  --color-group-purple: #A25DDC;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2A3444 transparent;
+  scrollbar-color: #383B5E transparent;
 }
 
 body {
   font-family: var(--font-sans);
+  background-color: var(--color-dark-bg);
 }
 
 input, textarea, select {
@@ -39,4 +64,80 @@ input, textarea, select {
 
 .font-mono {
   font-family: var(--font-mono);
+}
+
+/* Monday.com style scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #383B5E;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #484B70;
+}
+
+/* Monday.com table cell hover */
+.board-cell:hover {
+  background-color: #323560;
+}
+
+/* Status pill animation */
+.status-pill {
+  transition: all 0.15s ease;
+}
+.status-pill:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* Sidebar transition */
+.sidebar-transition {
+  transition: width 0.2s ease, opacity 0.15s ease;
+}
+
+/* Group collapse animation */
+.group-collapse {
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+
+/* Row hover highlight */
+.board-row:hover {
+  background-color: rgba(50, 53, 96, 0.5);
+}
+
+/* Kanban card */
+.kanban-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Progress bar glow effect */
+.progress-glow {
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Inline edit focus */
+.inline-edit:focus {
+  outline: 2px solid #0073EA;
+  outline-offset: -1px;
+  border-radius: 4px;
+}
+
+/* No scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

@@ -16,7 +16,7 @@ export default function ProgressBar({ progress, size = 'md', showLabel = true, c
       : clamped >= 40
         ? 'bg-status-progress'
         : clamped > 0
-          ? 'bg-gold'
+          ? 'bg-primary'
           : 'bg-dark-border-light';
 
   return (
