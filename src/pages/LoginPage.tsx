@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, UserPlus, LogIn } from 'lucide-react';
-import { loginWithEmail, signUpWithEmail, isAdminRole, isAuthenticated, onAuthChange } from '../lib/auth';
+import { Lock, Mail, UserPlus, LogIn, KeyRound } from 'lucide-react';
+import { loginWithEmail, signUpWithEmail, isAdminRole, onAuthChange, checkEmployeeExists } from '../lib/auth';
 import type { AuthUser } from '../lib/auth';
 
-type Mode = 'login' | 'signup';
+type Mode = 'login' | 'first-login';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('login');
@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [setupSuccess, setSetupSuccess] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const navigate = useNavigate();
 
@@ -38,16 +38,29 @@ export default function LoginPage() {
     setError('');
     try {
       const user: AuthUser = await loginWithEmail(email, password);
+      if (!user.employee) {
+        setError('등록된 직원 정보가 없습니다. 관리자에게 문의하세요.');
+        setLoading(false);
+        return;
+      }
       if (isAdminRole(user.employee)) {
         sessionStorage.setItem('isAdmin', 'true');
       }
       navigate('/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '로그인에 실패했습니다.';
-      if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found')) {
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-      } else if (msg.includes('too-many-requests')) {
+      if (msg.includes('Invalid login credentials')) {
+        // Check if this employee exists but hasn't set up their password yet
+        const exists = await checkEmployeeExists(email);
+        if (exists) {
+          setError('비밀번호가 설정되지 않았거나 올바르지 않습니다. 처음 로그인이라면 아래 "비밀번호 설정"을 클릭하세요.');
+        } else {
+          setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        }
+      } else if (msg.includes('too-many-requests') || msg.includes('rate limit')) {
         setError('로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.');
+      } else if (msg.includes('Email not confirmed')) {
+        setError('이메일 인증이 필요합니다. 이메일을 확인해 주세요.');
       } else {
         setError(msg);
       }
@@ -55,8 +68,17 @@ export default function LoginPage() {
     setLoading(false);
   }
 
-  async function handleSignup(e: React.FormEvent) {
+  async function handleFirstLogin(e: React.FormEvent) {
     e.preventDefault();
+    setError('');
+
+    // Check employee exists
+    const exists = await checkEmployeeExists(email);
+    if (!exists) {
+      setError('등록된 직원 이메일이 아닙니다. 관리자에게 문의하세요.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('비밀번호가 일치하지 않습니다.');
       return;
@@ -65,15 +87,15 @@ export default function LoginPage() {
       setError('비밀번호는 6자 이상이어야 합니다.');
       return;
     }
+
     setLoading(true);
-    setError('');
     try {
       await signUpWithEmail(email, password);
-      setSignupSuccess(true);
+      setSetupSuccess(true);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '회원가입에 실패했습니다.';
-      if (msg.includes('email-already-in-use')) {
-        setError('이미 등록된 이메일입니다.');
+      const msg = err instanceof Error ? err.message : '비밀번호 설정에 실패했습니다.';
+      if (msg.includes('already registered') || msg.includes('already been registered')) {
+        setError('이미 비밀번호가 설정된 계정입니다. 로그인을 시도해주세요.');
       } else {
         setError(msg);
       }
@@ -92,25 +114,24 @@ export default function LoginPage() {
     );
   }
 
-  if (signupSuccess) {
+  if (setupSuccess) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <div className="bg-dark-card rounded-2xl border border-dark-border p-8 shadow-xl text-center">
             <div className="w-14 h-14 bg-status-done/10 border border-status-done/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <UserPlus className="w-7 h-7 text-status-done" />
+              <KeyRound className="w-7 h-7 text-status-done" />
             </div>
-            <h1 className="text-xl font-bold text-text-bright mb-2">가입 완료</h1>
+            <h1 className="text-xl font-bold text-text-bright mb-2">비밀번호 설정 완료</h1>
             <p className="text-sm text-text-dim mb-6 leading-relaxed">
-              계정이 생성되었습니다.<br />
-              관리자가 직원 프로필을 연결하면<br />
-              로그인할 수 있습니다.
+              비밀번호가 설정되었습니다.<br />
+              이제 로그인할 수 있습니다.
             </p>
             <button
-              onClick={() => { setMode('login'); setSignupSuccess(false); setError(''); }}
+              onClick={() => { setMode('login'); setSetupSuccess(false); setError(''); setConfirmPassword(''); }}
               className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-hover transition-colors"
             >
-              로그인으로 돌아가기
+              로그인하기
             </button>
           </div>
         </div>
@@ -134,10 +155,13 @@ export default function LoginPage() {
               <span className="text-sm font-bold text-text-mid">INTEROHRIGIN</span>
             </div>
             <h1 className="text-xl font-bold text-text-bright">
-              {mode === 'login' ? '로그인' : '회원가입'}
+              {mode === 'login' ? '로그인' : '비밀번호 설정'}
             </h1>
             <p className="text-sm text-text-dim mt-1">
-              {mode === 'login' ? '이메일과 비밀번호를 입력하세요' : '새 계정을 만드세요'}
+              {mode === 'login'
+                ? '이메일과 비밀번호를 입력하세요'
+                : '처음 로그인하시는 분은 비밀번호를 설정하세요'
+              }
             </p>
           </div>
 
@@ -154,23 +178,23 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => { setMode('signup'); setError(''); }}
+              onClick={() => { setMode('first-login'); setError(''); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                mode === 'signup' ? 'bg-primary text-white' : 'text-text-dim hover:text-text-mid'
+                mode === 'first-login' ? 'bg-primary text-white' : 'text-text-dim hover:text-text-mid'
               }`}
             >
-              <UserPlus className="w-3.5 h-3.5" /> 회원가입
+              <KeyRound className="w-3.5 h-3.5" /> 비밀번호 설정
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={mode === 'login' ? handleLogin : handleSignup} className="space-y-3">
+          <form onSubmit={mode === 'login' ? handleLogin : handleFirstLogin} className="space-y-3">
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-dim" />
               <input
                 type="email"
                 className="w-full bg-dark-border border border-dark-border-light rounded-xl pl-10 pr-4 py-3 text-sm text-text-bright placeholder-text-dim focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
-                placeholder="이메일"
+                placeholder="회사 이메일"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -190,7 +214,7 @@ export default function LoginPage() {
               />
             </div>
 
-            {mode === 'signup' && (
+            {mode === 'first-login' && (
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-dim" />
                 <input
@@ -214,17 +238,18 @@ export default function LoginPage() {
               className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-hover transition-colors disabled:opacity-50"
             >
               {loading
-                ? (mode === 'login' ? '로그인 중...' : '가입 중...')
-                : (mode === 'login' ? '로그인' : '회원가입')
+                ? (mode === 'login' ? '로그인 중...' : '설정 중...')
+                : (mode === 'login' ? '로그인' : '비밀번호 설정')
               }
             </button>
           </form>
 
-          {mode === 'login' && (
-            <p className="text-xs text-text-dim text-center mt-4">
-              프로젝트 관리 플랫폼에 로그인하세요
-            </p>
-          )}
+          <p className="text-xs text-text-dim text-center mt-4">
+            {mode === 'login'
+              ? '처음 로그인하시나요? "비밀번호 설정" 탭에서 비밀번호를 설정하세요'
+              : '등록된 회사 이메일로만 비밀번호를 설정할 수 있습니다'
+            }
+          </p>
         </div>
       </div>
     </div>
