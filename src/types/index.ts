@@ -8,6 +8,8 @@ export interface Project {
   currentPhase: string;
   githubRepo: string;
   updatedAt: Date;
+  createdBy: string;       // 생성자 이메일
+  collaborators: string[]; // 협업자 이메일 목록
 }
 
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'blocked';

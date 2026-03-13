@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, UserPlus, LogIn } from 'lucide-react';
-import { loginWithEmail, signUpWithEmail, isAdminRole } from '../lib/auth';
+import { loginWithEmail, signUpWithEmail, isAdminRole, isAuthenticated, onAuthChange } from '../lib/auth';
 import type { AuthUser } from '../lib/auth';
 
 type Mode = 'login' | 'signup';
 
-export default function AdminLogin() {
+export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +14,23 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const navigate = useNavigate();
+
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    const unsub = onAuthChange((user) => {
+      if (user) {
+        if (isAdminRole(user.employee)) {
+          sessionStorage.setItem('isAdmin', 'true');
+        }
+        navigate('/dashboard', { replace: true });
+      } else {
+        setCheckingAuth(false);
+      }
+    });
+    return unsub;
+  }, [navigate]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -65,6 +81,17 @@ export default function AdminLogin() {
     setLoading(false);
   }
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-text-dim text-sm">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (signupSuccess) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
@@ -76,8 +103,8 @@ export default function AdminLogin() {
             <h1 className="text-xl font-bold text-text-bright mb-2">가입 완료</h1>
             <p className="text-sm text-text-dim mb-6 leading-relaxed">
               계정이 생성되었습니다.<br />
-              관리자가 Supabase에서 직원 프로필을 연결하면<br />
-              관리자 권한으로 로그인할 수 있습니다.
+              관리자가 직원 프로필을 연결하면<br />
+              로그인할 수 있습니다.
             </p>
             <button
               onClick={() => { setMode('login'); setSignupSuccess(false); setError(''); }}
@@ -195,7 +222,7 @@ export default function AdminLogin() {
 
           {mode === 'login' && (
             <p className="text-xs text-text-dim text-center mt-4">
-              관리자 권한은 Supabase 직원 프로필의 역할에 따라 결정됩니다.
+              프로젝트 관리 플랫폼에 로그인하세요
             </p>
           )}
         </div>

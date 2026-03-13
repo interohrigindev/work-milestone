@@ -8,7 +8,8 @@ import {
   Plus,
   Activity,
 } from 'lucide-react';
-import { isAdminAuthenticated, logoutAdmin } from '../lib/auth';
+import { isAuthenticated, logout, isAdminRole, onAuthChange } from '../lib/auth';
+import type { AuthUser } from '../lib/auth';
 import { fetchEmployees } from '../lib/employees';
 import type { Employee } from '../lib/employees';
 import Sidebar from '../components/Sidebar';
@@ -80,11 +81,23 @@ export default function AdminPage() {
   const [logBlockers, setLogBlockers] = useState('');
   const [logTomorrowPlan, setLogTomorrowPlan] = useState('');
 
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
   useEffect(() => {
-    if (!isAdminAuthenticated()) {
-      navigate('/admin/login');
+    const unsubAuth = onAuthChange((user) => {
+      if (!user || !isAdminRole(user.employee)) {
+        navigate('/');
+        return;
+      }
+      setAuthUser(user);
+    });
+
+    // If not authenticated at all, redirect immediately
+    if (!isAuthenticated()) {
+      navigate('/');
       return;
     }
+
     const unsubs = [
       subscribeAllProjects(setAllProjects),
       subscribeProject(projectId, (p) => {
@@ -96,7 +109,10 @@ export default function AdminPage() {
       subscribeComments(projectId, setComments),
     ];
     fetchEmployees().then(setEmployees);
-    return () => unsubs.forEach((u) => u());
+    return () => {
+      unsubAuth();
+      unsubs.forEach((u) => u());
+    };
   }, [navigate, projectId]);
 
   // Auto-update overall progress
@@ -108,9 +124,9 @@ export default function AdminPage() {
     }
   }, [tasks, project, projectId]);
 
-  function handleLogout() {
-    logoutAdmin();
-    navigate('/admin/login');
+  async function handleLogout() {
+    await logout();
+    navigate('/');
   }
 
   async function handleSeed() {
@@ -244,6 +260,8 @@ export default function AdminPage() {
         onLogout={handleLogout}
         unreadCount={unreadCommentCount}
         employees={employees}
+        currentUserName={authUser?.employee?.name ?? authUser?.email}
+        currentUserEmail={authUser?.email}
       />
 
       {/* Main content */}
@@ -485,7 +503,14 @@ export default function AdminPage() {
           {/* Share */}
           {activePanel === 'share' && (
             <div className="max-w-4xl mx-auto px-6 py-6">
-              <SharePanel projectId={projectId} />
+              <SharePanel
+                projectId={projectId}
+                isAdmin
+                collaborators={project.collaborators ?? []}
+                onUpdateCollaborators={(collaborators) =>
+                  updateProject(projectId, { collaborators } as Partial<Project>)
+                }
+              />
             </div>
           )}
         </div>

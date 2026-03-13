@@ -18,6 +18,8 @@ import GitHubPanel from '../components/GitHubPanel';
 import ProgressBar from '../components/ProgressBar';
 import { fetchEmployees } from '../lib/employees';
 import type { Employee } from '../lib/employees';
+import { onAuthChange, logout } from '../lib/auth';
+import type { AuthUser } from '../lib/auth';
 import {
   subscribeProject,
   subscribeAllProjects,
@@ -146,6 +148,7 @@ function ProjectListView() {
 
 /** Single project detail view with Monday.com layout */
 function ProjectDetailView({ projectId }: { projectId: string }) {
+  const navigate = useNavigate();
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [projectLoaded, setProjectLoaded] = useState(false);
@@ -153,6 +156,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [activePanel, setActivePanel] = useState<PanelTab>('board');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,6 +164,13 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     setProjectLoaded(false);
+    const unsubAuth = onAuthChange((user) => {
+      if (!user) {
+        navigate('/', { replace: true });
+        return;
+      }
+      setAuthUser(user);
+    });
     const unsubs = [
       subscribeAllProjects(setAllProjects),
       subscribeProject(projectId, (p) => {
@@ -171,8 +182,11 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
       subscribeComments(projectId, setComments),
     ];
     fetchEmployees().then(setEmployees);
-    return () => unsubs.forEach((u) => u());
-  }, [projectId]);
+    return () => {
+      unsubAuth();
+      unsubs.forEach((u) => u());
+    };
+  }, [projectId, navigate]);
 
   // Filter tasks
   const filteredTasks = useMemo(() => {
@@ -233,6 +247,9 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
         projects={allProjects}
         currentProjectId={projectId}
         employees={employees}
+        onLogout={async () => { await logout(); navigate('/'); }}
+        currentUserName={authUser?.employee?.name ?? authUser?.email}
+        currentUserEmail={authUser?.email}
       />
 
       {/* Main content */}

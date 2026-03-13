@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   Clock,
 } from 'lucide-react';
-import { isAdminAuthenticated, logoutAdmin } from '../lib/auth';
+import { isAuthenticated, logout, onAuthChange, isAdminRole } from '../lib/auth';
+import type { AuthUser } from '../lib/auth';
 import { subscribeAllProjects, createNewProject, deleteProject } from '../lib/firestore';
 import { parseRepoSlug } from '../lib/github';
 import Sidebar from '../components/Sidebar';
@@ -32,21 +33,35 @@ export default function AdminDashboard() {
   const [endDate, setEndDate] = useState('');
   const [githubRepo, setGithubRepo] = useState('');
 
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
   useEffect(() => {
-    if (!isAdminAuthenticated()) {
-      navigate('/admin/login');
+    const unsubAuth = onAuthChange((user) => {
+      if (!user || !isAdminRole(user.employee)) {
+        navigate('/');
+        return;
+      }
+      setAuthUser(user);
+    });
+
+    if (!isAuthenticated()) {
+      navigate('/');
       return;
     }
+
     const unsub = subscribeAllProjects((p) => {
       setProjects(p);
       setLoaded(true);
     });
-    return unsub;
+    return () => {
+      unsubAuth();
+      unsub();
+    };
   }, [navigate]);
 
-  function handleLogout() {
-    logoutAdmin();
-    navigate('/admin/login');
+  async function handleLogout() {
+    await logout();
+    navigate('/');
   }
 
   function resetForm() {
@@ -80,6 +95,8 @@ export default function AdminDashboard() {
         overallProgress: 0,
         currentPhase: '준비중',
         githubRepo: createMode === 'github' ? githubRepo.trim() : '',
+        createdBy: authUser?.email ?? '',
+        collaborators: [],
       });
       resetForm();
       navigate(`/admin/project/${id}`);
@@ -116,6 +133,8 @@ export default function AdminDashboard() {
         projects={projects}
         isAdmin
         onLogout={handleLogout}
+        currentUserName={authUser?.employee?.name ?? authUser?.email}
+        currentUserEmail={authUser?.email}
       />
 
       <div className="flex-1 min-w-0">

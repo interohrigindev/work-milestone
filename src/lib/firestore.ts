@@ -36,6 +36,8 @@ export function subscribeAllProjects(cb: (projects: Project[]) => void) {
         currentPhase: data.currentPhase ?? '',
         githubRepo: data.githubRepo ?? '',
         updatedAt: tsToDate(data.updatedAt),
+        createdBy: data.createdBy ?? '',
+        collaborators: data.collaborators ?? [],
       } as Project;
     }));
   });
@@ -68,6 +70,8 @@ export function subscribeProject(projectId: string, cb: (project: Project | null
       currentPhase: d.currentPhase ?? '',
       githubRepo: d.githubRepo ?? '',
       updatedAt: tsToDate(d.updatedAt),
+      createdBy: d.createdBy ?? '',
+      collaborators: d.collaborators ?? [],
     });
   });
 }

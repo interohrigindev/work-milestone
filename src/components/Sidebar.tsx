@@ -24,9 +24,11 @@ interface Props {
   onLogout?: () => void;
   unreadCount?: number;
   employees?: Employee[];
+  currentUserName?: string;
+  currentUserEmail?: string;
 }
 
-export default function Sidebar({ projects, currentProjectId, isAdmin, onLogout, unreadCount = 0, employees = [] }: Props) {
+export default function Sidebar({ projects, currentProjectId, isAdmin, onLogout, unreadCount = 0, employees = [], currentUserName, currentUserEmail }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -71,9 +73,9 @@ export default function Sidebar({ projects, currentProjectId, isAdmin, onLogout,
       {/* Quick nav */}
       <div className="px-2 py-2 space-y-0.5 border-b border-dark-border">
         <button
-          onClick={() => navigate(isAdmin ? '/admin' : '/')}
+          onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')}
           className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors ${
-            location.pathname === '/admin' || location.pathname === '/'
+            location.pathname === '/admin' || location.pathname === '/dashboard'
               ? 'bg-primary/15 text-primary'
               : 'text-text-mid hover:bg-dark-card hover:text-text-bright'
           }`}
@@ -199,20 +201,36 @@ export default function Sidebar({ projects, currentProjectId, isAdmin, onLogout,
 
       {/* Footer */}
       <div className="px-2 py-2 border-t border-dark-border space-y-0.5">
+        {/* Current user info */}
+        {currentUserName && !collapsed && (
+          <div className="px-2.5 py-2 mb-1">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                <span className="text-primary text-xs font-bold">{currentUserName.charAt(0)}</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-text-bright truncate">{currentUserName}</p>
+                {currentUserEmail && (
+                  <p className="text-[10px] text-text-dim truncate">{currentUserEmail}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         {isAdmin && (
-          <>
-            <button className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-text-mid hover:bg-dark-card hover:text-text-bright transition-colors">
-              <Settings className="w-4 h-4 shrink-0" />
-              {!collapsed && <span>설정</span>}
-            </button>
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-text-mid hover:bg-dark-card hover:text-status-blocked transition-colors"
-            >
-              <LogOut className="w-4 h-4 shrink-0" />
-              {!collapsed && <span>로그아웃</span>}
-            </button>
-          </>
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-text-mid hover:bg-dark-card hover:text-text-bright transition-colors">
+            <Settings className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>설정</span>}
+          </button>
+        )}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-text-mid hover:bg-dark-card hover:text-status-blocked transition-colors"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>로그아웃</span>}
+          </button>
         )}
       </div>
     </aside>
