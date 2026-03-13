@@ -113,6 +113,8 @@ export async function seedProject(): Promise<string> {
     overallProgress: 0,
     currentPhase: '준비중',
     githubRepo: '',
+    createdBy: '',
+    collaborators: [],
   });
 
   // Create tasks

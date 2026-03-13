@@ -13,6 +13,8 @@ import {
   Users,
   AlertCircle,
   PieChart,
+  X,
+  Settings,
 } from 'lucide-react';
 import { isAuthenticated, logout, onAuthChange, isAdminRole } from '../lib/auth';
 import type { AuthUser } from '../lib/auth';
@@ -41,6 +43,7 @@ export default function Dashboard() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [githubRepo, setGithubRepo] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const unsubAuth = onAuthChange((user) => {
@@ -154,7 +157,17 @@ export default function Dashboard() {
         currentUserName={authUser?.employee?.name ?? authUser?.email}
         currentUserEmail={authUser?.email}
         employees={employees}
+        onShowSettings={() => setShowSettings(true)}
       />
+
+      {/* Settings modal */}
+      {showSettings && (
+        <SettingsModal
+          user={authUser}
+          employees={employees}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
 
       <div className="flex-1 min-w-0 overflow-y-auto">
         {isAdmin ? (
@@ -200,6 +213,7 @@ export default function Dashboard() {
             resetForm={resetForm}
             navigate={navigate}
             userName={authUser?.employee?.name ?? '사용자'}
+            userEmail={authUser?.email ?? ''}
           />
         )}
       </div>
@@ -506,7 +520,7 @@ function ExecutiveDashboard({
 function MemberDashboard({
   projects, allProjectsCount, createMode, setCreateMode, creating,
   title, setTitle, subtitle, setSubtitle, startDate, setStartDate, endDate, setEndDate,
-  githubRepo, setGithubRepo, handleCreate, resetForm, navigate, userName,
+  githubRepo, setGithubRepo, handleCreate, resetForm, navigate, userName, userEmail,
 }: {
   projects: Project[];
   allProjectsCount: number;
@@ -522,9 +536,10 @@ function MemberDashboard({
   resetForm: () => void;
   navigate: (path: string) => void;
   userName: string;
+  userEmail: string;
 }) {
-  const myProjects = projects.filter(p => p.createdBy);
-  const collabProjects = projects.filter(p => !p.createdBy);
+  const myProjects = projects.filter(p => p.createdBy === userEmail);
+  const collabProjects = projects.filter(p => p.createdBy !== userEmail && p.collaborators?.includes(userEmail));
 
   const totalProgress = projects.length > 0
     ? Math.round(projects.reduce((sum, p) => sum + p.overallProgress, 0) / projects.length)
@@ -598,16 +613,44 @@ function MemberDashboard({
         )}
 
         {/* My projects */}
-        {projects.length > 0 && (
-          <div className="grid gap-3">
-            {projects.map((p) => (
-              <ProjectCard
-                key={p.id}
-                project={p}
-                isAdmin={false}
-                onNavigate={() => navigate(`/view/${p.id}`)}
-              />
-            ))}
+        {myProjects.length > 0 && (
+          <div>
+            <h2 className="text-text-bright font-bold text-sm mb-3 flex items-center gap-2">
+              <FolderOpen className="w-4 h-4" />
+              내가 만든 프로젝트
+              <span className="text-text-dim font-normal">({myProjects.length})</span>
+            </h2>
+            <div className="grid gap-3">
+              {myProjects.map((p) => (
+                <ProjectCard
+                  key={p.id}
+                  project={p}
+                  isAdmin={false}
+                  onNavigate={() => navigate(`/view/${p.id}`)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Collaborative projects */}
+        {collabProjects.length > 0 && (
+          <div>
+            <h2 className="text-text-bright font-bold text-sm mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              협업 프로젝트
+              <span className="text-text-dim font-normal">({collabProjects.length})</span>
+            </h2>
+            <div className="grid gap-3">
+              {collabProjects.map((p) => (
+                <ProjectCard
+                  key={p.id}
+                  project={p}
+                  isAdmin={false}
+                  onNavigate={() => navigate(`/view/${p.id}`)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </main>
@@ -835,6 +878,115 @@ function StatusLegend({ color, label, count }: { color: string; label: string; c
       <div className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
       <span className="text-xs text-text-mid">{label}</span>
       <span className="text-xs font-bold font-mono text-text-bright">{count}</span>
+    </div>
+  );
+}
+
+function SettingsModal({ user, employees, onClose }: { user: AuthUser | null; employees: Employee[]; onClose: () => void }) {
+  const currentEmployee = user?.employee;
+  const roleLabels: Record<string, string> = {
+    employee: '사원', leader: '팀장', director: '이사',
+    division_head: '본부장', ceo: '대표', admin: '관리자',
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-dark-card rounded-2xl border border-dark-border w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-dark-border">
+          <div className="flex items-center gap-2">
+            <Settings className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-text-bright">설정</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-text-dim hover:text-text-bright hover:bg-dark-border transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Profile */}
+          <div>
+            <h3 className="text-sm font-bold text-text-bright mb-3">내 프로필</h3>
+            <div className="bg-dark-border rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  {currentEmployee?.avatar_url ? (
+                    <img src={currentEmployee.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <span className="text-primary text-lg font-bold">
+                      {currentEmployee?.name?.charAt(0) ?? user?.email?.charAt(0) ?? '?'}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-text-bright">{currentEmployee?.name ?? '이름 없음'}</p>
+                  <p className="text-xs text-text-dim">{user?.email}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span className="text-text-dim">직급</span>
+                  <p className="text-text-bright font-medium mt-0.5">{roleLabels[currentEmployee?.role ?? ''] ?? '미정'}</p>
+                </div>
+                <div>
+                  <span className="text-text-dim">부서</span>
+                  <p className="text-text-bright font-medium mt-0.5">{currentEmployee?.department_name ?? '미배정'}</p>
+                </div>
+                <div>
+                  <span className="text-text-dim">연락처</span>
+                  <p className="text-text-bright font-medium mt-0.5">{currentEmployee?.phone ?? '-'}</p>
+                </div>
+                <div>
+                  <span className="text-text-dim">상태</span>
+                  <p className="text-text-bright font-medium mt-0.5">{currentEmployee?.is_active ? '활성' : '비활성'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Team overview */}
+          <div>
+            <h3 className="text-sm font-bold text-text-bright mb-3">팀 멤버 ({employees.length}명)</h3>
+            <div className="bg-dark-border rounded-xl divide-y divide-dark-border-light max-h-[200px] overflow-y-auto">
+              {employees.map((emp) => (
+                <div key={emp.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    {emp.avatar_url ? (
+                      <img src={emp.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      <span className="text-primary text-[10px] font-bold">{emp.name.charAt(0)}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-text-bright truncate">{emp.name}</p>
+                    <p className="text-[10px] text-text-dim truncate">{emp.email}</p>
+                  </div>
+                  <span className="text-[10px] text-text-dim bg-dark-card px-2 py-0.5 rounded-full shrink-0">
+                    {roleLabels[emp.role] ?? emp.role}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* App info */}
+          <div>
+            <h3 className="text-sm font-bold text-text-bright mb-3">앱 정보</h3>
+            <div className="bg-dark-border rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-text-dim">버전</span>
+                <span className="text-text-bright font-mono">1.0.0</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-dim">플랫폼</span>
+                <span className="text-text-bright">INTEROHRIGIN</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
