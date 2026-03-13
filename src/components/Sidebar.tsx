@@ -11,8 +11,11 @@ import {
   Settings,
   Home,
   Bell,
+  Users,
 } from 'lucide-react';
+import TeamPanel from './TeamPanel';
 import type { Project } from '../types';
+import type { Employee } from '../lib/employees';
 
 interface Props {
   projects: Project[];
@@ -20,13 +23,15 @@ interface Props {
   isAdmin?: boolean;
   onLogout?: () => void;
   unreadCount?: number;
+  employees?: Employee[];
 }
 
-export default function Sidebar({ projects, currentProjectId, isAdmin, onLogout, unreadCount = 0 }: Props) {
+export default function Sidebar({ projects, currentProjectId, isAdmin, onLogout, unreadCount = 0, employees = [] }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showTeam, setShowTeam] = useState(false);
 
   const filteredProjects = projects.filter(p =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -102,7 +107,32 @@ export default function Sidebar({ projects, currentProjectId, isAdmin, onLogout,
             </span>
           )}
         </button>
+        {employees.length > 0 && (
+          <button
+            onClick={() => setShowTeam(!showTeam)}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors ${
+              showTeam
+                ? 'bg-primary/15 text-primary'
+                : 'text-text-mid hover:bg-dark-card hover:text-text-bright'
+            }`}
+          >
+            <Users className="w-4 h-4 shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left">팀 멤버</span>
+                <span className="text-[10px] text-text-dim">{employees.length}</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
+
+      {/* Team panel (toggled) */}
+      {showTeam && employees.length > 0 && (
+        <div className="border-b border-dark-border overflow-y-auto max-h-[240px]">
+          <TeamPanel employees={employees} collapsed={collapsed} />
+        </div>
+      )}
 
       {/* Search */}
       {!collapsed && (

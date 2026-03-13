@@ -9,6 +9,8 @@ import {
   Activity,
 } from 'lucide-react';
 import { isAdminAuthenticated, logoutAdmin } from '../lib/auth';
+import { fetchEmployees } from '../lib/employees';
+import type { Employee } from '../lib/employees';
 import Sidebar from '../components/Sidebar';
 import ViewSwitcher from '../components/ViewSwitcher';
 import BoardTableView from '../components/BoardTableView';
@@ -50,6 +52,7 @@ export default function AdminPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [activePanel, setActivePanel] = useState<PanelTab>('board');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [seeding, setSeeding] = useState(false);
@@ -92,6 +95,7 @@ export default function AdminPage() {
       subscribeDailyLogs(projectId, setLogs),
       subscribeComments(projectId, setComments),
     ];
+    fetchEmployees().then(setEmployees);
     return () => unsubs.forEach((u) => u());
   }, [navigate, projectId]);
 
@@ -239,6 +243,7 @@ export default function AdminPage() {
         isAdmin
         onLogout={handleLogout}
         unreadCount={unreadCommentCount}
+        employees={employees}
       />
 
       {/* Main content */}
@@ -328,6 +333,7 @@ export default function AdminPage() {
             <BoardTableView
               tasks={filteredTasks}
               comments={comments}
+              employees={employees}
               isAdmin
               onUpdateTask={handleUpdateTask}
               onAddComment={handleAddTaskComment}
@@ -339,6 +345,7 @@ export default function AdminPage() {
             <KanbanView
               tasks={filteredTasks}
               comments={comments}
+              employees={employees}
               isAdmin
               onUpdateTask={handleUpdateTask}
               onAddComment={handleAddTaskComment}

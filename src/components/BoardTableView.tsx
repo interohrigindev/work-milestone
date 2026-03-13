@@ -10,11 +10,15 @@ import {
 } from 'lucide-react';
 import type { Task, TaskStatus, TaskPriority, Comment } from '../types';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../types';
+import type { Employee } from '../lib/employees';
+import AssigneePicker from './AssigneePicker';
+import Avatar from './Avatar';
 import ProgressBar from './ProgressBar';
 
 interface Props {
   tasks: Task[];
   comments: Comment[];
+  employees?: Employee[];
   isAdmin?: boolean;
   onUpdateTask?: (taskId: string, data: Partial<Task>) => void;
   onAddComment?: (taskId: string, taskTitle: string, content: string, author: string) => void;
@@ -47,7 +51,7 @@ const DAY_CATEGORIES: Record<number, string> = {
   5: '완성 + 배포',
 };
 
-export default function BoardTableView({ tasks, comments, isAdmin, onUpdateTask, onAddComment, onDeleteTask, onAddTask }: Props) {
+export default function BoardTableView({ tasks, comments, employees = [], isAdmin, onUpdateTask, onAddComment, onDeleteTask, onAddTask }: Props) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set());
   const [editingCell, setEditingCell] = useState<{ taskId: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -279,33 +283,15 @@ export default function BoardTableView({ tasks, comments, isAdmin, onUpdateTask,
 
                         {/* Assignee */}
                         <div className="px-2 py-2.5 flex justify-center">
-                          {editingCell?.taskId === task.id && editingCell.field === 'assignee' ? (
-                            <input
-                              autoFocus
-                              className="inline-edit bg-transparent text-xs text-text-bright w-16 text-center px-1"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={() => commitEdit(task.id, 'assignee')}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') commitEdit(task.id, 'assignee');
-                                if (e.key === 'Escape') setEditingCell(null);
-                              }}
+                          {isAdmin && employees.length > 0 ? (
+                            <AssigneePicker
+                              employees={employees}
+                              currentAssigneeId={task.assignee || ''}
+                              onSelect={(_empId, empName) => onUpdateTask?.(task.id, { assignee: empName })}
+                              onClear={() => onUpdateTask?.(task.id, { assignee: '' })}
                             />
                           ) : (
-                            <div
-                              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer ${
-                                task.assignee
-                                  ? 'bg-primary text-white'
-                                  : 'bg-dark-border text-text-dim border border-dashed border-dark-border-light hover:border-primary hover:text-primary'
-                              }`}
-                              onClick={() => isAdmin && startEdit(task.id, 'assignee', task.assignee || '')}
-                              title={task.assignee || '담당자 지정'}
-                            >
-                              {task.assignee
-                                ? task.assignee.charAt(0).toUpperCase()
-                                : <Plus className="w-3 h-3" />
-                              }
-                            </div>
+                            <Avatar name={task.assignee || ''} size="md" />
                           )}
                         </div>
 

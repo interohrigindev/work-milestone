@@ -16,6 +16,8 @@ import DailyLogCard from '../components/DailyLogCard';
 import CommentSection from '../components/CommentSection';
 import GitHubPanel from '../components/GitHubPanel';
 import ProgressBar from '../components/ProgressBar';
+import { fetchEmployees } from '../lib/employees';
+import type { Employee } from '../lib/employees';
 import {
   subscribeProject,
   subscribeAllProjects,
@@ -150,6 +152,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [activePanel, setActivePanel] = useState<PanelTab>('board');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [searchQuery, setSearchQuery] = useState('');
@@ -167,6 +170,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
       subscribeDailyLogs(projectId, setLogs),
       subscribeComments(projectId, setComments),
     ];
+    fetchEmployees().then(setEmployees);
     return () => unsubs.forEach((u) => u());
   }, [projectId]);
 
@@ -228,6 +232,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
       <Sidebar
         projects={allProjects}
         currentProjectId={projectId}
+        employees={employees}
       />
 
       {/* Main content */}
@@ -288,6 +293,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
             <BoardTableView
               tasks={filteredTasks}
               comments={comments}
+              employees={employees}
               onAddComment={handleAddTaskComment}
             />
           )}
@@ -295,6 +301,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
             <KanbanView
               tasks={filteredTasks}
               comments={comments}
+              employees={employees}
               onAddComment={handleAddTaskComment}
             />
           )}

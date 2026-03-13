@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Plus, MessageCircle, Clock, MoreHorizontal } from 'lucide-react';
+import { MessageCircle, Clock, MoreHorizontal } from 'lucide-react';
 import type { Task, TaskStatus, Comment } from '../types';
 import { PRIORITY_CONFIG } from '../types';
+import type { Employee } from '../lib/employees';
+import Avatar from './Avatar';
 
 interface Props {
   tasks: Task[];
   comments: Comment[];
+  employees?: Employee[];
   isAdmin?: boolean;
   onUpdateTask?: (taskId: string, data: Partial<Task>) => void;
   onAddComment?: (taskId: string, taskTitle: string, content: string, author: string) => void;
@@ -18,7 +21,7 @@ const COLUMNS: { status: TaskStatus; label: string; color: string }[] = [
   { status: 'blocked',     label: '막힘',   color: '#E2445C' },
 ];
 
-export default function KanbanView({ tasks, comments, isAdmin, onUpdateTask }: Props) {
+export default function KanbanView({ tasks, comments, employees = [], isAdmin, onUpdateTask }: Props) {
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
 
@@ -142,18 +145,10 @@ export default function KanbanView({ tasks, comments, isAdmin, onUpdateTask }: P
                       {/* Footer */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          {task.assignee ? (
-                            <div
-                              className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[9px] font-bold text-white"
-                              title={task.assignee}
-                            >
-                              {task.assignee.charAt(0).toUpperCase()}
-                            </div>
-                          ) : (
-                            <div className="w-6 h-6 rounded-full border border-dashed border-dark-border-light flex items-center justify-center">
-                              <Plus className="w-2.5 h-2.5 text-text-dim" />
-                            </div>
-                          )}
+                          {(() => {
+                            const emp = employees.find(e => e.name === task.assignee);
+                            return <Avatar employee={emp} name={task.assignee || ''} size="sm" />;
+                          })()}
                           {task.dueDate && (
                             <span className="flex items-center gap-0.5 text-[9px] text-text-dim">
                               <Clock className="w-2.5 h-2.5" />
